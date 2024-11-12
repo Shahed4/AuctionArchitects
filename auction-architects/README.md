@@ -1,8 +1,13 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is a Next.js project: 
+The car auction marketplace is an online platform designed to facilitate secure e-bidding, allowing users to list, bid on, and purchase vehicles. This platform accommodates various user types, including visitors, regular users, VIP members, and administrators, each with distinct privileges. The marketplace prioritizes security in transactions and user verification to ensure a trustworthy environment. Through the system, users can access detailed vehicle information, including history and condition, and engage in bidding with a seller reserve threshold. VIP users benefit from special access to high-value, low-damage vehicles and discounts on purchases. Key functionalities include secure payment processing, a rating system for post-transaction trust, and administrative tools for user management. The marketplace relies on APIs, like CarFax, for vehicle history verification and enforces account security through encryption and user verification steps. With a focus on providing a seamless, high-performance experience, the marketplace aims to support large user volumes during active bidding periods, offering an intuitive GUI tailored to user needs.
+
 
 ## Getting Started
 
-First, run the development server:
+First install all dependencies
+npm i
+
+Second, run the development server:
 
 ```bash
 npm run dev
