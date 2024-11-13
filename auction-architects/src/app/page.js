@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import {
   AppBar,
   Toolbar,
@@ -19,13 +19,85 @@ import { useRouter } from "next/navigation";
 export default function Home() {
   const router = useRouter();
 
+  // Mock car data
+  const carList = [
+    {
+      id: 1,
+      model: "Toyota Camry",
+      year: 2023,
+      price: 25000,
+      minBid: 20000,
+      image: "/camry.avif",
+    },
+    {
+      id: 2,
+      model: "Honda Accord",
+      year: 2022,
+      price: 24500,
+      minBid: 21000,
+      image: "/accord.jpg",
+    },
+    {
+      id: 3,
+      model: "Tesla Model 3",
+      year: 2021,
+      price: 35000,
+      minBid: 30000,
+      image: "/tasla.jpg",
+    },
+    {
+      id: 4,
+      model: "Ford Mustang",
+      year: 2020,
+      price: 40000,
+      minBid: 35000,
+      image: "/mustang.avif",
+    },
+  ];
+
+  // State to manage filter inputs and filtered cars
+  const [filters, setFilters] = useState({
+    model: "",
+    year: "",
+    price: "",
+    minBid: "",
+  });
+  const [filteredCars, setFilteredCars] = useState(carList);
+
+  // Handle filter input changes
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prevFilters) => ({
+      ...prevFilters,
+      [name]: value,
+    }));
+  };
+
+  // Apply filters when the "Filter" button is clicked
+  const applyFilters = () => {
+    const filtered = carList.filter((car) => {
+      return (
+        (filters.model
+          ? car.model.toLowerCase().includes(filters.model.toLowerCase())
+          : true) &&
+        (filters.year ? car.year.toString() === filters.year : true) &&
+        (filters.price ? car.price <= parseFloat(filters.price) : true) &&
+        (filters.minBid ? car.minBid <= parseFloat(filters.minBid) : true)
+      );
+    });
+    setFilteredCars(filtered);
+  };
+
+  // Handle card click to navigate to car details
   const handleCardClick = (carId) => {
     router.push(`/car?id=${carId}`);
   };
 
   return (
-    <Box sx={{ backgroundColor: "#000", minHeight: "100vh", color: "#fff" }}>
-      <Container maxWidth="lg" sx={{ p: 0 }}>
+    <Box
+      sx={{ backgroundColor: "#000", minHeight: "100vh", color: "#fff", py: 5 }}
+    >
+      <Container maxWidth="lg">
         {/* Navigation Bar */}
         <AppBar
           position="fixed"
@@ -73,51 +145,70 @@ export default function Home() {
         </Box>
 
         {/* Auction Section with Filter and Car Cards */}
-        <Box
-          sx={{ backgroundColor: "#000", py: 10, width: "100%", color: "#fff" }}
-        >
+        <Box sx={{ backgroundColor: "#000", py: 10, width: "100%" }}>
           <Typography variant="h4" gutterBottom>
             Car Auctions
           </Typography>
 
           {/* Filter Options */}
-          <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
+          <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
             <TextField
               label="Model"
               variant="outlined"
               size="small"
-              sx={{
-                input: { color: "#fff" },
-                label: { color: "#fff" },
-                fieldset: { borderColor: "#fff" },
-              }}
+              name="model"
+              value={filters.model}
+              onChange={handleFilterChange}
+              InputLabelProps={{ style: { color: "#fff" } }}
+              InputProps={{ style: { color: "#fff" } }}
+              sx={{ fieldset: { borderColor: "#fff" } }}
             />
             <TextField
-              label="Date"
+              label="Year"
               variant="outlined"
               size="small"
-              sx={{
-                input: { color: "#fff" },
-                label: { color: "#fff" },
-                fieldset: { borderColor: "#fff" },
-              }}
+              name="year"
+              value={filters.year}
+              onChange={handleFilterChange}
+              InputLabelProps={{ style: { color: "#fff" } }}
+              InputProps={{ style: { color: "#fff" } }}
+              sx={{ fieldset: { borderColor: "#fff" } }}
             />
             <TextField
-              label="Price"
+              label="Price (Max)"
               variant="outlined"
               size="small"
-              sx={{
-                input: { color: "#fff" },
-                label: { color: "#fff" },
-                fieldset: { borderColor: "#fff" },
-              }}
+              name="price"
+              value={filters.price}
+              onChange={handleFilterChange}
+              InputLabelProps={{ style: { color: "#fff" } }}
+              InputProps={{ style: { color: "#fff" }, type: "number" }}
+              sx={{ fieldset: { borderColor: "#fff" } }}
             />
+            <TextField
+              label="Minimum Bidding Price (Max)"
+              variant="outlined"
+              size="small"
+              name="minBid"
+              value={filters.minBid}
+              onChange={handleFilterChange}
+              InputLabelProps={{ style: { color: "#fff" } }}
+              InputProps={{ style: { color: "#fff" }, type: "number" }}
+              sx={{ fieldset: { borderColor: "#fff" } }}
+            />
+            <Button
+              variant="contained"
+              onClick={applyFilters}
+              sx={{ backgroundColor: "#1976d2", color: "#fff" }}
+            >
+              Filter
+            </Button>
           </Box>
 
-          {/* Car Cards */}
+          {/* Filtered Car Cards */}
           <Grid container spacing={3}>
-            {Array.from({ length: 20 }, (_, index) => (
-              <Grid item xs={12} sm={6} md={4} key={index}>
+            {filteredCars.map((car) => (
+              <Grid item xs={12} sm={6} md={4} key={car.id}>
                 <Card
                   sx={{
                     maxWidth: 345,
@@ -125,18 +216,21 @@ export default function Home() {
                     backgroundColor: "#1a1a1a",
                     color: "#fff",
                   }}
-                  onClick={() => handleCardClick(index + 1)}
+                  onClick={() => handleCardClick(car.id)}
                 >
                   <CardMedia
                     component="img"
                     height="140"
-                    image="/camry.avif" // Placeholder image path
-                    alt="Car image"
+                    image={car.image} // Replace with actual image path
+                    alt={`${car.model}`}
                   />
                   <CardContent>
-                    <Typography variant="h6">Car Model {index + 1}</Typography>
+                    <Typography variant="h6">{car.model}</Typography>
                     <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
-                      Year: 2023 | Price: $25,000
+                      Year: {car.year} | Price: ${car.price}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
+                      Minimum Bid: ${car.minBid}
                     </Typography>
                   </CardContent>
                 </Card>
