@@ -1,40 +1,244 @@
-import styles from './HomePage.module.css';
+"use client";
+import React, { useState } from "react";
+import {
+  AppBar,
+  Toolbar,
+  IconButton,
+  Button,
+  Typography,
+  Box,
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  CardMedia,
+  TextField,
+} from "@mui/material";
+import { useRouter } from "next/navigation";
 
-export default function HomePage() {
+export default function Home() {
+  const router = useRouter();
+
+  // Mock car data
+  const carList = [
+    {
+      id: 1,
+      model: "Toyota Camry",
+      year: 2023,
+      price: 25000,
+      minBid: 20000,
+      image: "/camry.avif",
+    },
+    {
+      id: 2,
+      model: "Honda Accord",
+      year: 2022,
+      price: 24500,
+      minBid: 21000,
+      image: "/accord.jpg",
+    },
+    {
+      id: 3,
+      model: "Tesla Model 3",
+      year: 2021,
+      price: 35000,
+      minBid: 30000,
+      image: "/tasla.jpg",
+    },
+    {
+      id: 4,
+      model: "Ford Mustang",
+      year: 2020,
+      price: 40000,
+      minBid: 35000,
+      image: "/mustang.avif",
+    },
+  ];
+
+  // State to manage filter inputs and filtered cars
+  const [filters, setFilters] = useState({
+    model: "",
+    year: "",
+    price: "",
+    minBid: "",
+  });
+  const [filteredCars, setFilteredCars] = useState(carList);
+
+  // Handle filter input changes
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prevFilters) => ({
+      ...prevFilters,
+      [name]: value,
+    }));
+  };
+
+  // Apply filters when the "Filter" button is clicked
+  const applyFilters = () => {
+    const filtered = carList.filter((car) => {
+      return (
+        (filters.model
+          ? car.model.toLowerCase().includes(filters.model.toLowerCase())
+          : true) &&
+        (filters.year ? car.year.toString() === filters.year : true) &&
+        (filters.price ? car.price <= parseFloat(filters.price) : true) &&
+        (filters.minBid ? car.minBid <= parseFloat(filters.minBid) : true)
+      );
+    });
+    setFilteredCars(filtered);
+  };
+
+  // Handle card click to navigate to car details
+  const handleCardClick = (carId) => {
+    router.push(`/car?id=${carId}`);
+  };
+
   return (
-    <div className={styles.container}>
-      <section className={styles.hero}>
-        <h1>Welcome to AuctionArchitects</h1>
-        <p>Your trusted marketplace for buying and selling cars</p>
-        <button className={styles.exploreButton}>Explore Listings</button>
-      </section>
+    <Box
+      sx={{ backgroundColor: "#000", minHeight: "100vh", color: "#fff", py: 5 }}
+    >
+      <Container maxWidth="lg">
+        {/* Navigation Bar */}
+        <AppBar
+          position="fixed"
+          sx={{ backgroundColor: "transparent", boxShadow: "none" }}
+        >
+          <Toolbar>
+            <IconButton
+              edge="start"
+              color="inherit"
+              aria-label="menu"
+              sx={{ mr: 2 }}
+            ></IconButton>
+            <Typography variant="h6" sx={{ flexGrow: 1 }}>
+              Auction Architects
+            </Typography>
+            <Button color="inherit">Sell</Button>
+            <Button color="inherit">Sign In</Button>
+            <Button color="inherit">Sign Up</Button>
+          </Toolbar>
+        </AppBar>
 
-      <section className={styles.catalog}>
-        <h2>Browse by Category</h2>
-        <div className={styles.categoryGrid}>
-          <div className={styles.categoryItem}>SUVs</div>
-          <div className={styles.categoryItem}>Sedans</div>
-          <div className={styles.categoryItem}>Trucks</div>
-          <div className={styles.categoryItem}>Electric</div>
-        </div>
-      </section>
+        {/* Background and Centered Title */}
+        <Box
+          sx={{
+            backgroundImage: `url(/28803.jpg)`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            height: "100vh",
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#fff",
+            textAlign: "center",
+          }}
+        >
+          <Typography variant="h2" gutterBottom>
+            Welcome to Auction Architects!
+          </Typography>
+          <Typography variant="h6">
+            Auction Architects allows you to create, manage, and bid on
+            auctions.
+          </Typography>
+        </Box>
 
-      <section className={styles.featured}>
-        <h2>Featured Listings</h2>
-        <div className={styles.carGrid}>
-          <div className={styles.carCard}>
-            <img src="/images/car1.jpg" alt="Car 1" />
-            <h3>2019 Toyota Camry</h3>
-            <p>$20,000</p>
-          </div>
-          <div className={styles.carCard}>
-            <img src="/images/car2.jpg" alt="Car 2" />
-            <h3>2021 Tesla Model 3</h3>
-            <p>$35,000</p>
-          </div>
-          {/* Add more car cards as needed */}
-        </div>
-      </section>
-    </div>
+        {/* Auction Section with Filter and Car Cards */}
+        <Box sx={{ backgroundColor: "#000", py: 10, width: "100%" }}>
+          <Typography variant="h4" gutterBottom>
+            Car Auctions
+          </Typography>
+
+          {/* Filter Options */}
+          <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
+            <TextField
+              label="Model"
+              variant="outlined"
+              size="small"
+              name="model"
+              value={filters.model}
+              onChange={handleFilterChange}
+              InputLabelProps={{ style: { color: "#fff" } }}
+              InputProps={{ style: { color: "#fff" } }}
+              sx={{ fieldset: { borderColor: "#fff" } }}
+            />
+            <TextField
+              label="Year"
+              variant="outlined"
+              size="small"
+              name="year"
+              value={filters.year}
+              onChange={handleFilterChange}
+              InputLabelProps={{ style: { color: "#fff" } }}
+              InputProps={{ style: { color: "#fff" } }}
+              sx={{ fieldset: { borderColor: "#fff" } }}
+            />
+            <TextField
+              label="Price (Max)"
+              variant="outlined"
+              size="small"
+              name="price"
+              value={filters.price}
+              onChange={handleFilterChange}
+              InputLabelProps={{ style: { color: "#fff" } }}
+              InputProps={{ style: { color: "#fff" }, type: "number" }}
+              sx={{ fieldset: { borderColor: "#fff" } }}
+            />
+            <TextField
+              label="Minimum Bidding Price (Max)"
+              variant="outlined"
+              size="small"
+              name="minBid"
+              value={filters.minBid}
+              onChange={handleFilterChange}
+              InputLabelProps={{ style: { color: "#fff" } }}
+              InputProps={{ style: { color: "#fff" }, type: "number" }}
+              sx={{ fieldset: { borderColor: "#fff" } }}
+            />
+            <Button
+              variant="contained"
+              onClick={applyFilters}
+              sx={{ backgroundColor: "#1976d2", color: "#fff" }}
+            >
+              Filter
+            </Button>
+          </Box>
+
+          {/* Filtered Car Cards */}
+          <Grid container spacing={3}>
+            {filteredCars.map((car) => (
+              <Grid item xs={12} sm={6} md={4} key={car.id}>
+                <Card
+                  sx={{
+                    maxWidth: 345,
+                    cursor: "pointer",
+                    backgroundColor: "#1a1a1a",
+                    color: "#fff",
+                  }}
+                  onClick={() => handleCardClick(car.id)}
+                >
+                  <CardMedia
+                    component="img"
+                    height="140"
+                    image={car.image} // Replace with actual image path
+                    alt={`${car.model}`}
+                  />
+                  <CardContent>
+                    <Typography variant="h6">{car.model}</Typography>
+                    <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
+                      Year: {car.year} | Price: ${car.price}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
+                      Minimum Bid: ${car.minBid}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      </Container>
+    </Box>
   );
 }
