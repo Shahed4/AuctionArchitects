@@ -29,7 +29,7 @@ export default function CarDetail() {
             <CardMedia
               component="img"
               height="400"
-              image="/camry.avif" // Replace with actual image path
+              image="/camry.avif"
               alt="Toyota Camry"
             />
           </Card>

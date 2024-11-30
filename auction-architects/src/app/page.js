@@ -43,7 +43,7 @@ export default function Home() {
       year: 2021,
       price: 35000,
       minBid: 30000,
-      image: "/tasla.jpg",
+      image: "/tesla.jpg",
     },
     {
       id: 4,
@@ -95,21 +95,22 @@ export default function Home() {
 
   return (
     <Box
-      sx={{ backgroundColor: "#000", minHeight: "100vh", color: "#fff", py: 5 }}
+      sx={{
+        backgroundColor: "#000",
+        minHeight: "100vw",
+        width: "100vw",
+        color: "#fff",
+        py: 0,
+        px: 0,
+      }}
     >
-      <Container maxWidth="lg">
+      <Container maxWidth="lg" sx={{ p: 0 }}>
         {/* Navigation Bar */}
         <AppBar
           position="fixed"
           sx={{ backgroundColor: "transparent", boxShadow: "none" }}
         >
           <Toolbar>
-            <IconButton
-              edge="start"
-              color="inherit"
-              aria-label="menu"
-              sx={{ mr: 2 }}
-            ></IconButton>
             <Typography variant="h6" sx={{ flexGrow: 1 }}>
               Auction Architects
             </Typography>
@@ -131,7 +132,6 @@ export default function Home() {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            color: "#fff",
             textAlign: "center",
           }}
         >
@@ -214,7 +214,6 @@ export default function Home() {
                     maxWidth: 345,
                     cursor: "pointer",
                     backgroundColor: "#1a1a1a",
-                    color: "#fff",
                   }}
                   onClick={() => handleCardClick(car.id)}
                 >
