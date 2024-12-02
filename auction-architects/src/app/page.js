@@ -1,9 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   AppBar,
   Toolbar,
-  IconButton,
   Button,
   Typography,
   Box,
@@ -18,51 +17,31 @@ import { useRouter } from "next/navigation";
 
 export default function Home() {
   const router = useRouter();
-
-  // Mock car data
-  const carList = [
-    {
-      id: 1,
-      model: "Toyota Camry",
-      year: 2023,
-      price: 25000,
-      minBid: 20000,
-      image: "/camry.avif",
-    },
-    {
-      id: 2,
-      model: "Honda Accord",
-      year: 2022,
-      price: 24500,
-      minBid: 21000,
-      image: "/accord.jpg",
-    },
-    {
-      id: 3,
-      model: "Tesla Model 3",
-      year: 2021,
-      price: 35000,
-      minBid: 30000,
-      image: "/tesla.jpg",
-    },
-    {
-      id: 4,
-      model: "Ford Mustang",
-      year: 2020,
-      price: 40000,
-      minBid: 35000,
-      image: "/mustang.avif",
-    },
-  ];
-
-  // State to manage filter inputs and filtered cars
+  const [cars, setCars] = useState([]); // Stores data fetched from MongoDB
   const [filters, setFilters] = useState({
     model: "",
     year: "",
     price: "",
     minBid: "",
   });
-  const [filteredCars, setFilteredCars] = useState(carList);
+  const [filteredCars, setFilteredCars] = useState([]);
+
+  // Fetch car data from MongoDB via the API
+  useEffect(() => {
+    const fetchCars = async () => {
+      try {
+        const response = await fetch("/api/cars"); // Fetch from MongoDB API
+        if (!response.ok) throw new Error("Failed to fetch cars");
+        const data = await response.json();
+        setCars(data); // Set the full list of cars
+        setFilteredCars(data); // Initialize filtered cars
+      } catch (error) {
+        console.error("Error fetching cars:", error.message);
+      }
+    };
+
+    fetchCars();
+  }, []);
 
   // Handle filter input changes
   const handleFilterChange = (e) => {
@@ -75,7 +54,7 @@ export default function Home() {
 
   // Apply filters when the "Filter" button is clicked
   const applyFilters = () => {
-    const filtered = carList.filter((car) => {
+    const filtered = cars.filter((car) => {
       return (
         (filters.model
           ? car.model.toLowerCase().includes(filters.model.toLowerCase())
@@ -90,14 +69,13 @@ export default function Home() {
 
   // Handle card click to navigate to car details
   const handleCardClick = (carId) => {
-    router.push(`/car?id=${carId}`);
+    router.push(`/car/${carId}`); // Navigate to the dynamic car details page
   };
-
   return (
     <Box
       sx={{
         backgroundColor: "#000",
-        minHeight: "100vw",
+        minHeight: "100vh",
         width: "100vw",
         color: "#fff",
         py: 0,
@@ -114,7 +92,9 @@ export default function Home() {
             <Typography variant="h6" sx={{ flexGrow: 1 }}>
               Auction Architects
             </Typography>
-            <Button color="inherit">Sell</Button>
+            <Button color="inherit" onClick={() => router.push("/sell")}>
+              Sell
+            </Button>
             <Button color="inherit">Sign In</Button>
             <Button color="inherit">Sign Up</Button>
           </Toolbar>
@@ -208,19 +188,19 @@ export default function Home() {
           {/* Filtered Car Cards */}
           <Grid container spacing={3}>
             {filteredCars.map((car) => (
-              <Grid item xs={12} sm={6} md={4} key={car.id}>
+              <Grid item xs={12} sm={6} md={4} key={car._id}>
                 <Card
                   sx={{
                     maxWidth: 345,
                     cursor: "pointer",
                     backgroundColor: "#1a1a1a",
                   }}
-                  onClick={() => handleCardClick(car.id)}
+                  onClick={() => handleCardClick(car._id)}
                 >
                   <CardMedia
                     component="img"
                     height="140"
-                    image={car.image} // Replace with actual image path
+                    image={car.image || "/default-car.jpg"} // Replace with actual image path
                     alt={`${car.model}`}
                   />
                   <CardContent>
