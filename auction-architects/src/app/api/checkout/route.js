@@ -6,6 +6,7 @@ export async function POST(req) {
   try {
     const { carId, price, description, model, imageUrl } = await req.json();
 
+    // Validate required fields
     if (!carId || !price || !description || !model) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
@@ -13,6 +14,7 @@ export async function POST(req) {
       );
     }
 
+    // Create Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -22,9 +24,9 @@ export async function POST(req) {
             product_data: {
               name: model,
               description: description,
-              images: [imageUrl],
+              //images: [imageUrl], // Ensure image URL is passed
             },
-            unit_amount: price * 100,
+            unit_amount: price * 100, // Stripe expects price in cents
           },
           quantity: 1,
         },

@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import {
   AppBar,
@@ -14,10 +15,12 @@ import {
   TextField,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
+import { useUser } from "@auth0/nextjs-auth0/client"; // Import Auth0 hook
 
 export default function Home() {
   const router = useRouter();
-  const [cars, setCars] = useState([]); // Stores data fetched from MongoDB
+  const { user, isLoading } = useUser(); // Access user data and loading state
+  const [cars, setCars] = useState([]); // Stores data fetched from API
   const [filters, setFilters] = useState({
     model: "",
     year: "",
@@ -26,15 +29,15 @@ export default function Home() {
   });
   const [filteredCars, setFilteredCars] = useState([]);
 
-  // Fetch car data from MongoDB via the API
+  // Fetch car data from API
   useEffect(() => {
     const fetchCars = async () => {
       try {
-        const response = await fetch("/api/cars"); // Fetch from MongoDB API
+        const response = await fetch("/api/cars"); // Fetch from API
         if (!response.ok) throw new Error("Failed to fetch cars");
         const data = await response.json();
-        setCars(data); // Set the full list of cars
-        setFilteredCars(data); // Initialize filtered cars
+        setCars(data);
+        setFilteredCars(data);
       } catch (error) {
         console.error("Error fetching cars:", error.message);
       }
@@ -52,7 +55,7 @@ export default function Home() {
     }));
   };
 
-  // Apply filters when the "Filter" button is clicked
+  // Apply filters
   const applyFilters = () => {
     const filtered = cars.filter((car) => {
       return (
@@ -67,20 +70,14 @@ export default function Home() {
     setFilteredCars(filtered);
   };
 
-  // Handle card click to navigate to car details
+  // Handle card click
   const handleCardClick = (carId) => {
-    router.push(`/car/${carId}`); // Navigate to the dynamic car details page
+    router.push(`/car/${carId}`);
   };
+
   return (
     <Box
-      sx={{
-        backgroundColor: "#000",
-        minHeight: "100vh",
-        width: "100vw",
-        color: "#fff",
-        py: 0,
-        px: 0,
-      }}
+      sx={{ backgroundColor: "#000", minHeight: "100vh", color: "#fff", py: 0 }}
     >
       <Container maxWidth="lg" sx={{ p: 0 }}>
         {/* Navigation Bar */}
@@ -95,19 +92,26 @@ export default function Home() {
             <Button color="inherit" onClick={() => router.push("/sell")}>
               Sell
             </Button>
-            <Button color="inherit">Sign In</Button>
-            <Button color="inherit">Sign Up</Button>
+            {!isLoading &&
+              (user ? (
+                <Button color="inherit" href="/api/auth/logout">
+                  Logout
+                </Button>
+              ) : (
+                <Button color="inherit" href="/api/auth/login">
+                  Login
+                </Button>
+              ))}
           </Toolbar>
         </AppBar>
 
-        {/* Background and Centered Title */}
+        {/* Hero Section */}
         <Box
           sx={{
             backgroundImage: `url(/28803.jpg)`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             height: "100vh",
-            width: "100%",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -124,8 +128,8 @@ export default function Home() {
           </Typography>
         </Box>
 
-        {/* Auction Section with Filter and Car Cards */}
-        <Box sx={{ backgroundColor: "#000", py: 10, width: "100%" }}>
+        {/* Auction Section */}
+        <Box sx={{ backgroundColor: "#000", py: 10 }}>
           <Typography variant="h4" gutterBottom>
             Car Auctions
           </Typography>
@@ -185,7 +189,7 @@ export default function Home() {
             </Button>
           </Box>
 
-          {/* Filtered Car Cards */}
+          {/* Car Cards */}
           <Grid container spacing={3}>
             {filteredCars.map((car) => (
               <Grid item xs={12} sm={6} md={4} key={car._id}>
@@ -200,7 +204,7 @@ export default function Home() {
                   <CardMedia
                     component="img"
                     height="140"
-                    image={car.image || "/default-car.jpg"} // Replace with actual image path
+                    image={car.images?.[0] || "/default-car.jpg"} // Display the first image
                     alt={`${car.model}`}
                   />
                   <CardContent>

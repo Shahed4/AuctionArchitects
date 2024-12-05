@@ -1,115 +1,108 @@
 "use client";
-import React from "react";
-import {
-  Box,
-  Container,
-  Typography,
-  Avatar,
-  Grid,
-  Card,
-  CardMedia,
-  CardContent,
-} from "@mui/material";
+
+import React, { useState, useEffect } from "react";
+import { useUser } from "@auth0/nextjs-auth0/client";
+import { Box, Typography, TextField, Button } from "@mui/material";
 
 export default function Profile() {
-  // Mock data for the user's information and interested cars
-  const userInfo = {
-    name: "Rafid Rahman",
-    email: "john.doe@example.com",
-    phone: "123-456-7890",
-    address: "1234 Elm Street, Springfield, USA",
+  const { user, isLoading, error } = useUser();
+  const [additionalInfo, setAdditionalInfo] = useState({
+    address: "",
+    phone: "",
+  });
+  const [savedInfo, setSavedInfo] = useState(null);
+
+  useEffect(() => {
+    // Fetch additional user info from your database
+    const fetchSavedInfo = async () => {
+      if (user) {
+        try {
+          const response = await fetch(`/api/users/${user.sub}`);
+          if (response.ok) {
+            const data = await response.json();
+            setSavedInfo(data);
+            setAdditionalInfo({
+              address: data.address || "",
+              phone: data.phone || "",
+            });
+          }
+        } catch (error) {
+          console.error("Failed to fetch additional user info:", error);
+        }
+      }
+    };
+
+    fetchSavedInfo();
+  }, [user]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setAdditionalInfo((prev) => ({ ...prev, [name]: value }));
   };
 
-  const interestedCars = [
-    {
-      id: 1,
-      model: "Toyota Camry 2023",
-      price: "$25,000",
-      image: "/camry.avif",
-    },
-    {
-      id: 2,
-      model: "Honda Accord 2022",
-      price: "$24,500",
-      image: "/accord.jpg",
-    },
-    { id: 3, model: "Tesla Model 3", price: "$35,000", image: "/tasla.jpg" },
-  ];
+  const handleSave = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`/api/users/${user.sub}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(additionalInfo),
+      });
+
+      if (response.ok) {
+        alert("Information saved successfully!");
+      } else {
+        alert("Failed to save information.");
+      }
+    } catch (error) {
+      console.error("Error saving additional info:", error);
+    }
+  };
+
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>{error.message}</p>;
 
   return (
-    <Box
-      sx={{ backgroundColor: "#000", minHeight: "100vh", color: "#fff", py: 5 }}
-    >
-      <Container maxWidth="md">
-        <Typography
-          variant="h3"
-          gutterBottom
-          sx={{ mb: 4, fontWeight: "bold", color: "#e0e0e0" }}
-        >
-          Profile
-        </Typography>
+    <Box sx={{ padding: "2rem", maxWidth: "600px", margin: "auto" }}>
+      <Typography variant="h4">Welcome, {user.name}!</Typography>
+      <img
+        src={user.picture}
+        alt="Profile"
+        style={{
+          borderRadius: "50%",
+          width: "100px",
+          height: "100px",
+          margin: "1rem 0",
+        }}
+      />
+      <Typography>Email: {user.email}</Typography>
 
-        {/* User Information */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 3,
-            mb: 4,
-            backgroundColor: "#1a1a1a",
-            p: 3,
-            borderRadius: 2,
-          }}
-        >
-          <Avatar sx={{ width: 80, height: 80, bgcolor: "#1976d2" }}>
-            {userInfo.name[0]}
-          </Avatar>
-          <Box>
-            <Typography
-              variant="h5"
-              sx={{ fontWeight: "bold", color: "#e0e0e0" }}
-            >
-              {userInfo.name}
-            </Typography>
-            <Typography variant="body1" sx={{ color: "#bdbdbd" }}>
-              {userInfo.email}
-            </Typography>
-            <Typography variant="body1" sx={{ color: "#bdbdbd" }}>
-              {userInfo.phone}
-            </Typography>
-            <Typography variant="body1" sx={{ color: "#bdbdbd" }}>
-              {userInfo.address}
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Interested Cars Section */}
-        <Typography variant="h4" gutterBottom sx={{ mb: 2, color: "#e0e0e0" }}>
-          Cars Marked as Interested
+      <form onSubmit={handleSave}>
+        <Typography variant="h6" sx={{ mt: 3 }}>
+          Add Additional Information
         </Typography>
-        <Grid container spacing={3}>
-          {interestedCars.map((car) => (
-            <Grid item xs={12} sm={6} md={4} key={car.id}>
-              <Card sx={{ backgroundColor: "#1a1a1a", color: "#fff" }}>
-                <CardMedia
-                  component="img"
-                  height="140"
-                  image={car.image} // Replace with the actual image path
-                  alt={`${car.model}`}
-                />
-                <CardContent>
-                  <Typography variant="h6" sx={{ color: "#e0e0e0" }}>
-                    {car.model}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
-                    {car.price}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
+        <TextField
+          label="Address"
+          name="address"
+          value={additionalInfo.address}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+        />
+        <TextField
+          label="Phone"
+          name="phone"
+          value={additionalInfo.phone}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+        />
+        <Button type="submit" variant="contained" sx={{ mt: 2 }}>
+          Save Information
+        </Button>
+      </form>
     </Box>
   );
 }
