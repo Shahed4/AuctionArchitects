@@ -255,68 +255,74 @@ export default function Sell() {
             />
     
             {/* Accident Data */}
-            <Typography variant="h5" sx={{ mt: 2, color: "#fff" }}>
-              Accident Data
-            </Typography>
-            <TextField
-              label="Was the car involved in an accident?"
-              name="accidentHistory"
-              select
-              value={formData.accidentHistory}
-              onChange={handleChange}
-              required
-              sx={textFieldStyles}
-            >
-              <MenuItem value="yes">Yes</MenuItem>
-              <MenuItem value="no">No</MenuItem>
-            </TextField>
-            <TextField
-              label="Damage Severity"
-              name="damageSeverity"
-              value={formData.damageSeverity}
-              onChange={handleChange}
-              sx={textFieldStyles}
-            />
-            <TextField
-              label="Point of Impact"
-              name="pointOfImpact"
-              value={formData.pointOfImpact}
-              onChange={handleChange}
-              sx={textFieldStyles}
-            />
-            <TextField
-              label="Records of Damage Repair"
-              name="repairRecords"
-              select
-              value={formData.repairRecords}
-              onChange={handleChange}
-              sx={textFieldStyles}
-            >
-              <MenuItem value="yes">Yes</MenuItem>
-              <MenuItem value="no">No</MenuItem>
-            </TextField>
-            <TextField
-              label="Airbag Deployment"
-              name="airbagDeployment"
-              select
-              value={formData.airbagDeployment}
-              onChange={handleChange}
-              sx={textFieldStyles}
-            >
-              <MenuItem value="yes">Yes</MenuItem>
-              <MenuItem value="no">No</MenuItem>
-            </TextField>
-            <TextField
-              label="Structural Damage"
-              name="structuralDamage"
-              select
-              value={formData.structuralDamage}
-              onChange={handleChange}
-              sx={textFieldStyles}
-            >
-              <MenuItem value="yes">Yes</MenuItem>
-              <MenuItem value="no">No</MenuItem>
-            </TextField>
+          <Typography variant="h5" sx={{ mt: 2, color: "#fff" }}>
+            Accident Data
+          </Typography>
+          <TextField
+            label="Was the car involved in an accident?"
+            name="accidentHistory"
+            select
+            value={formData.accidentHistory}
+            onChange={handleChange}
+            required
+            sx={textFieldStyles}
+          >
+            <MenuItem value="yes">Yes</MenuItem>
+            <MenuItem value="no">No</MenuItem>
+          </TextField>
+
+          {/* Conditionally Render Additional Fields */}
+          {formData.accidentHistory === "yes" && (
+            <>
+              <TextField
+                label="Damage Severity"
+                name="damageSeverity"
+                value={formData.damageSeverity}
+                onChange={handleChange}
+                sx={textFieldStyles}
+              />
+              <TextField
+                label="Point of Impact"
+                name="pointOfImpact"
+                value={formData.pointOfImpact}
+                onChange={handleChange}
+                sx={textFieldStyles}
+              />
+              <TextField
+                label="Records of Damage Repair"
+                name="repairRecords"
+                select
+                value={formData.repairRecords}
+                onChange={handleChange}
+                sx={textFieldStyles}
+              >
+                <MenuItem value="yes">Yes</MenuItem>
+                <MenuItem value="no">No</MenuItem>
+              </TextField>
+              <TextField
+                label="Airbag Deployment"
+                name="airbagDeployment"
+                select
+                value={formData.airbagDeployment}
+                onChange={handleChange}
+                sx={textFieldStyles}
+              >
+                <MenuItem value="yes">Yes</MenuItem>
+                <MenuItem value="no">No</MenuItem>
+              </TextField>
+              <TextField
+                label="Structural Damage"
+                name="structuralDamage"
+                select
+                value={formData.structuralDamage}
+                onChange={handleChange}
+                sx={textFieldStyles}
+              >
+                <MenuItem value="yes">Yes</MenuItem>
+                <MenuItem value="no">No</MenuItem>
+              </TextField>
+            </>
+          )}
     
             {/* Service History */}
             <Typography variant="h5" sx={{ mt: 2, color: "#fff" }}>
