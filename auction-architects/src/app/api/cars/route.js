@@ -10,7 +10,16 @@ export async function POST(req) {
     console.log("Incoming data:", body);
 
     // Validate required fields
-    const requiredFields = ["model", "year", "price", "minBid", "description"];
+    const requiredFields = [
+      "name",
+      "address",
+      "phone",
+      "model",
+      "year",
+      "price",
+      "minBid",
+      "description",
+    ];
     for (const field of requiredFields) {
       if (!body[field]) {
         return new Response(
@@ -22,6 +31,9 @@ export async function POST(req) {
 
     // Construct new car object
     const newCar = {
+      name: body.name,
+      address: body.address,
+      phone: body.phone,
       model: body.model,
       year: body.year,
       price: parseFloat(body.price),
