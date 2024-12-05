@@ -190,36 +190,52 @@ export default function Home() {
           </Box>
 
           {/* Car Cards */}
-          <Grid container spacing={3}>
-            {filteredCars.map((car) => (
-              <Grid item xs={12} sm={6} md={4} key={car._id}>
-                <Card
-                  sx={{
-                    maxWidth: 345,
-                    cursor: "pointer",
-                    backgroundColor: "#1a1a1a",
-                  }}
-                  onClick={() => handleCardClick(car._id)}
-                >
-                  <CardMedia
-                    component="img"
-                    height="140"
-                    image={car.images?.[0] || "/default-car.jpg"} // Display the first image
-                    alt={`${car.model}`}
-                  />
-                  <CardContent>
-                    <Typography variant="h6">{car.model}</Typography>
-                    <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
-                      Year: {car.year} | Price: ${car.price}
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
-                      Minimum Bid: ${car.minBid}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+         <Grid container spacing={3}>
+  {filteredCars.map((car) => (
+    <Grid item xs={12} sm={6} md={4} key={car._id}>
+      <Card
+        sx={{
+          maxWidth: 345,
+          cursor: "pointer",
+          backgroundColor: "#1a1a1a",
+          border: "2px solid #fff", // White border for the card
+          "&:hover": {
+            boxShadow: "0 0 10px #fff", // Optional hover effect
+          },
+        }}
+        onClick={() => handleCardClick(car._id)}
+      >
+        <CardMedia
+          component="img"
+          height="140"
+          image={car.images?.[0] || "/default-car.jpg"}
+          alt={`${car.model}`}
+          sx={{
+            border: "2px solid #000", // Black border around the image
+          }}
+        />
+        <CardContent>
+          <Typography
+            variant="h6"
+            sx={{
+              textAlign: "center", // Center-align the title
+              color: "#fff", // White text color for the title
+            }}
+          >
+            {car.model}
+          </Typography>
+          <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
+            Year: {car.year} | Price: ${car.price}
+          </Typography>
+          <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
+            Minimum Bid: ${car.minBid}
+          </Typography>
+        </CardContent>
+      </Card>
+    </Grid>
+  ))}
+</Grid>
+
         </Box>
       </Container>
     </Box>

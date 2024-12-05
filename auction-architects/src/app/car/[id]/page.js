@@ -17,7 +17,7 @@ export default function CarDetails({ params: initialParams }) {
   const [car, setCar] = useState(null);
   const [loading, setLoading] = useState(true);
   const [id, setId] = useState(null);
-  const [bidAmount, setBidAmount] = useState(0);
+  const [bidAmount, setBidAmount] = useState("");
 
   // Unwrap `params` asynchronously
   useEffect(() => {
@@ -79,6 +79,22 @@ export default function CarDetails({ params: initialParams }) {
     }
   };
 
+  const textFieldStyles = {
+    fieldset: { borderColor: "#fff" },
+    "& .MuiOutlinedInput-root:hover fieldset": { borderColor: "#fff" },
+    "& .MuiOutlinedInput-input": { color: "#fff" },
+    "& .MuiInputLabel-root": {
+      color: "#fff",
+      transition: "all 0.2s ease",
+    },
+    "& .MuiInputLabel-root.Mui-focused": {
+      color: "#1976d2",
+    },
+    "& .MuiOutlinedInput-root.Mui-focused fieldset": {
+      borderColor: "#1976d2",
+    },
+  };
+
   if (loading) {
     return (
       <Box
@@ -112,12 +128,10 @@ export default function CarDetails({ params: initialParams }) {
   }
 
   return (
-    <Box
-      sx={{ backgroundColor: "#000", minHeight: "100vh", color: "#fff", py: 5 }}
-    >
+    <Box sx={{ backgroundColor: "#000", minHeight: "100vh", color: "#fff", py: 5 }}>
       <Container maxWidth="md">
-        <Typography variant="h3" sx={{ mb: 4, fontWeight: "bold" }}>
-          {car.model} ({car.year})
+        <Typography variant="h3" sx={{ mb: 4, fontWeight: "bold", color: "#e0e0e0" }}>
+          {car.year} {car.model}
         </Typography>
 
         {/* Display Car Images */}
@@ -133,7 +147,7 @@ export default function CarDetails({ params: initialParams }) {
                     width: "100%",
                     height: "auto",
                     borderRadius: 2,
-                    boxShadow: "0 4px 10px rgba(255, 255, 255, 0.2)",
+                    boxShadow: "0px 4px 10px rgba(255,255,255,0.2)",
                   }}
                 />
               </Grid>
@@ -143,6 +157,7 @@ export default function CarDetails({ params: initialParams }) {
           <Typography>No images available for this car.</Typography>
         )}
 
+        {/* Car Details */}
         <Box>
           <Typography variant="h6">Description:</Typography>
           <Typography>{car.description}</Typography>
@@ -150,11 +165,23 @@ export default function CarDetails({ params: initialParams }) {
 
         <Box sx={{ mt: 2 }}>
           <Typography variant="h6">Current Bid:</Typography>
-          <Typography variant="body1">
-            ${car.currentBid || "No bids yet"}
-          </Typography>
+          <Typography>${car.currentBid || "No bids yet"}</Typography>
         </Box>
 
+        {/* Accident Data */}
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="h5" sx={{ mb: 2 }}>
+            Accident Data
+          </Typography>
+          <Typography>Accident History: {car.accidentHistory || "N/A"}</Typography>
+          <Typography>Damage Severity: {car.damageSeverity || "N/A"}</Typography>
+          <Typography>Point of Impact: {car.pointOfImpact || "N/A"}</Typography>
+          <Typography>Repair Records: {car.repairRecords || "N/A"}</Typography>
+          <Typography>Airbag Deployment: {car.airbagDeployment || "N/A"}</Typography>
+          <Typography>Structural Damage: {car.structuralDamage || "N/A"}</Typography>
+        </Box>
+
+        {/* Place Bid Section */}
         <Box sx={{ mt: 4, display: "flex", flexDirection: "column", gap: 2 }}>
           <Button
             variant="contained"
@@ -168,10 +195,10 @@ export default function CarDetails({ params: initialParams }) {
           <TextField
             type="number"
             value={bidAmount}
-            onChange={(e) => setBidAmount(Number(e.target.value))}
+            onChange={(e) => setBidAmount(e.target.value)}
             label="Enter bid amount"
             variant="outlined"
-            sx={{ input: { color: "#fff" }, fieldset: { borderColor: "#fff" } }}
+            sx={textFieldStyles}
             InputLabelProps={{ style: { color: "#fff" } }}
           />
           <Button
