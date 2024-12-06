@@ -247,6 +247,7 @@ export default function Sell() {
             label="Year"
             name="year"
             value={formData.year}
+            type="number"
             onChange={handleChange}
             required
             sx={textFieldStyles}
@@ -262,11 +263,24 @@ export default function Sell() {
           <TextField
             label="Type"
             name="type"
+            select
             value={formData.type}
             onChange={handleChange}
             required
             sx={textFieldStyles}
-          />
+          >
+            <MenuItem value="SUV">SUV</MenuItem>
+            <MenuItem value="Sedan">Sedan</MenuItem>
+            <MenuItem value="Coupe">Coupe</MenuItem>
+            <MenuItem value="Sports Car">Sports Car</MenuItem>
+            <MenuItem value="Convertible">Convertible</MenuItem>
+            <MenuItem value="Hybrid">Hybrid</MenuItem>
+            <MenuItem value="Electric Car">Electric Car</MenuItem>
+            <MenuItem value="Hatchback">Hatchback</MenuItem>
+            <MenuItem value="Minivan">Minivan</MenuItem>
+            <MenuItem value="Pickup Truck">Pickup Truck</MenuItem>
+            <MenuItem value="Other">Other</MenuItem>
+          </TextField>
           <TextField
             label="Description"
             name="description"
