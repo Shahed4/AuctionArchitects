@@ -14,8 +14,11 @@ export async function POST(req) {
       "name",
       "address",
       "phone",
+      "make",
       "model",
       "year",
+      "color",
+      "type",
       "price",
       "minBid",
       "description",
@@ -27,6 +30,13 @@ export async function POST(req) {
           { status: 400 }
         );
       }
+    }
+
+    if (body.year < 1900 || body.year > new Date().getFullYear()) {
+      return new Response(
+        JSON.stringify({ error: "Invalid year. Please provide a valid year." }),
+        { status: 400 }
+      );
     }
 
     // Construct new car object
