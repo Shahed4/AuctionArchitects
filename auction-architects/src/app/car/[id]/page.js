@@ -12,12 +12,14 @@ import {
   AccordionSummary,
   AccordionDetails,
   Grid,
+  TextField,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 export default function CheckoutPage() {
   const { id } = useParams(); // Dynamically resolve params
   const [car, setCar] = useState(null);
+  const [bidAmount, setBidAmount] = useState(""); // To store the bid amount
   const [loading, setLoading] = useState(true);
 
   // Fetch car details
@@ -56,9 +58,39 @@ export default function CheckoutPage() {
         window.location.href = data.url; // Redirect to Stripe Checkout
       } else {
         console.error("Checkout error:", data.error);
+        alert(data.error || "Checkout failed.");
       }
     } catch (error) {
       console.error("Checkout error:", error);
+      alert("An error occurred during checkout.");
+    }
+  };
+
+  const handleBid = async () => {
+    if (Number(bidAmount) <= Number(car.minBid)) {
+      alert("Bid amount must be greater than the minimum bid!");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/cars/${id}/bid`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ amount: bidAmount }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to place bid");
+      }
+
+      const updatedCar = await response.json();
+      setCar(updatedCar);
+      alert("Bid placed successfully!");
+    } catch (error) {
+      alert(error.message || "An error occurred while placing the bid.");
     }
   };
 
@@ -248,21 +280,68 @@ export default function CheckoutPage() {
           </Grid>
         </Grid>
 
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleCheckout}
-          sx={{
-            mt: 3,
-            backgroundColor: "#1976d2",
-            "&:hover": {
-              backgroundColor: "#1565c0",
-            },
-          }}
-        >
-          Proceed to Checkout
-        </Button>
-      </Container>
-    </Box>
+        <Box
+  sx={{
+    display: "flex",
+    justifyContent: "space-between", // Ensures proper spacing between elements
+    alignItems: "center",
+    mt: 4, // Adds spacing above the section
+    mb: 3, // Adds spacing below the section
+  }}
+>
+  {/* Bid Input Field with Place Bid Button */}
+  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+    <TextField
+      label="Enter Bid Amount"
+      type="number"
+      variant="outlined"
+      value={bidAmount}
+      onChange={(e) => setBidAmount(e.target.value)}
+      InputLabelProps={{
+        style: { color: "#fff" }, // Makes the label text white
+      }}
+      sx={{
+        width: "200px", // Sets the input field to a fixed width
+        "& .MuiOutlinedInput-root": {
+          backgroundColor: "#1a1a1a", // Matches the gray of the "Accident Data" section
+          color: "#fff", // Ensures the text color is white
+        },
+        "& .MuiOutlinedInput-root input::placeholder": {
+          color: "#fff", // Placeholder text color
+        },
+        "& .MuiOutlinedInput-input": {
+          color: "#fff", // Input text color
+        },
+      }}
+    />
+    <Button
+      variant="contained"
+      color="primary"
+      onClick={handleBid}
+      sx={{
+        backgroundColor: "#4caf50",
+        "&:hover": { backgroundColor: "#388e3c" },
+      }}
+    >
+      Place Bid
+    </Button>
+  </Box>
+
+  {/* Buy Now Button */}
+  <Button
+    variant="contained"
+    color="primary"
+    onClick={handleCheckout}
+    sx={{
+      backgroundColor: "#1976d2",
+      "&:hover": { backgroundColor: "#1565c0" },
+    }}
+  >
+    Buy Now
+  </Button>
+</Box>
+
+</Container>
+</Box> 
   );
 }
