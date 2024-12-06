@@ -65,6 +65,8 @@ export async function POST(req) {
       currentOdometerReading: body.currentOdometerReading || null,
       floodOrLemonTitle: body.floodOrLemonTitle || null,
       createdAt: new Date(),
+      showListing: true,
+      listingClosed: false,
     };
 
     // Insert car into the database
