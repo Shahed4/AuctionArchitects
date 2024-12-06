@@ -89,12 +89,12 @@ export default function Sell() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if(formData.phone.toString().length != 10) {
+
+    if (formData.phone.toString().length != 10) {
       alert("Must enter a real phone number.");
       return;
     }
-    
+
     setLoading(true);
 
     try {
@@ -301,6 +301,14 @@ export default function Sell() {
             rows={4}
             sx={textFieldStyles}
           />
+          <TextField
+            label="Last Reported Mileage"
+            name="lastReportedMileage"
+            value={formData.lastReportedMileage}
+            onChange={handleChange}
+            type="number" // Ensures only numbers can be entered
+            sx={textFieldStyles}
+          />
 
           {/* Payout  */}
           <Typography variant="h5" sx={{ mt: 2, color: "#fff" }}>
@@ -487,14 +495,6 @@ export default function Sell() {
             name="ownershipLength"
             value={formData.ownershipLength}
             onChange={handleChange}
-            sx={textFieldStyles}
-          />
-          <TextField
-            label="Last Reported Mileage"
-            name="lastReportedMileage"
-            value={formData.lastReportedMileage}
-            onChange={handleChange}
-            type="number" // Ensures only numbers can be entered
             sx={textFieldStyles}
           />
           <TextField

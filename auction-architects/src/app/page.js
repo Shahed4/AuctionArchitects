@@ -221,7 +221,7 @@ export default function Home() {
               color: "#fff", // White text color for the title
             }}
           >
-            {car.model}
+            {car.make} {car.model}
           </Typography>
           <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
             Year: {car.year} | Price: ${car.price}
