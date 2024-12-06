@@ -33,7 +33,6 @@ export async function POST(req) {
 
     // Parse and log incoming request body
     const body = await req.json();
-    console.log("Incoming data:", body);
 
     // Validate required fields
     const requiredFields = [
