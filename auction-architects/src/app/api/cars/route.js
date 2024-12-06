@@ -41,7 +41,7 @@ export async function POST(req) {
       type: body.type,
       price: parseFloat(body.price),
       minBid: parseFloat(body.minBid),
-      currBid: 0,
+      currBid: parseFloat(body.minBid),
       bidderID: null,
       numBids: 0,
       description: body.description,
