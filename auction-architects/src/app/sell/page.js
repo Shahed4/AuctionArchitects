@@ -160,8 +160,8 @@ export default function Sell() {
   return (
       <Box sx={{ backgroundColor: "#000", minHeight: "100vh", color: "#fff", py: 5 }}>
         <Container maxWidth="md">
-          <Typography variant="h3" sx={{ mb: 4, fontWeight: "bold", color: "#e0e0e0" }}>
-            Sell Your Car
+          <Typography textAlign="center" variant="h3" sx={{ mb: 4, fontWeight: "bold", color: "#e0e0e0" }}>
+            Let's Sell Your Car!
           </Typography>
           <Box
             component="form"
@@ -177,7 +177,7 @@ export default function Sell() {
             }}
           >
             {/* Personal Information */}
-            <TextField
+            <div></div><TextField
               label="Your Name"
               name="name"
               value={formData.name}
