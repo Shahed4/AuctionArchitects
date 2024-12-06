@@ -1,5 +1,31 @@
 import clientPromise from "../../../../lib/mongodb";
 
+const endTime = (option) => {
+  let currentDate = new Date(); // Start with the current date
+
+  switch (option) {
+    case "3 Days":
+      currentDate.setDate(currentDate.getDate() + 3);
+      break;
+    case "5 Days":
+      currentDate.setDate(currentDate.getDate() + 5);
+      break;
+    case "1 Week":
+      currentDate.setDate(currentDate.getDate() + 7);
+      break;
+    case "2 Weeks":
+      currentDate.setDate(currentDate.getDate() + 14);
+      break;
+    case "1 Month":
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      break;
+    default:
+      currentDate.setDate(currentDate.getDate() + 14);
+  }
+
+  return currentDate;
+};
+
 export async function POST(req) {
   try {
     const client = await clientPromise;
@@ -7,7 +33,6 @@ export async function POST(req) {
 
     // Parse and log incoming request body
     const body = await req.json();
-    console.log("Incoming data:", body);
 
     // Validate required fields
     const requiredFields = [
@@ -44,6 +69,7 @@ export async function POST(req) {
       name: body.name,
       address: body.address,
       phone: body.phone,
+      vin: body.vin,
       make: body.make,
       model: body.model,
       year: body.year,
@@ -51,8 +77,9 @@ export async function POST(req) {
       type: body.type,
       price: parseFloat(body.price),
       minBid: parseFloat(body.minBid),
+      endTime: endTime(body.endTime),
       currBid: parseFloat(body.minBid),
-      bidderID: null,
+      bidderId: null,
       numBids: 0,
       description: body.description,
       images: body.images || [], // Add uploaded image URLs if available
@@ -77,6 +104,7 @@ export async function POST(req) {
       createdAt: new Date(),
       showListing: true,
       listingClosed: false,
+      bids: [],
     };
 
     // Insert car into the database
@@ -86,6 +114,7 @@ export async function POST(req) {
       JSON.stringify({
         message: "Car added successfully",
         carId: result.insertedId,
+        redirectTo: `/car/${result.insertedId}`, // Include the redirect URL
       }),
       { status: 201 }
     );

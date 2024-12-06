@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import {
   Box,
@@ -12,6 +13,7 @@ import {
 } from "@mui/material";
 
 export default function Sell() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
     address: "",
@@ -24,6 +26,7 @@ export default function Sell() {
     type: "",
     minBid: "",
     price: "",
+    endTime: "",
     description: "",
     images: [],
     accidentHistory: "",
@@ -105,42 +108,12 @@ export default function Sell() {
       });
 
       if (response.ok) {
-        alert("Car added successfully!");
-        setFormData({
-          name: "",
-          address: "",
-          phone: "",
-          vin: "",
-          make: "",
-          model: "",
-          year: "",
-          color: "",
-          type: "",
-          price: "",
-          minBid: "",
-          description: "",
-          images: [],
-          accidentHistory: "",
-          damageSeverity: "",
-          pointOfImpact: "",
-          repairRecords: "",
-          airbagDeployment: "",
-          structuralDamage: "",
-          oilChanges: "",
-          tireRotations: "",
-          openRecalls: "",
-          brakeRotorReplaced: "",
-          transmissionReplaced: "",
-          safetyInspections: "",
-          typeOfUse: "",
-          previousOwners: "",
-          ownershipStates: "",
-          ownershipLength: "",
-          lastReportedMileage: "",
-          currentOdometerReading: "",
-          floodOrLemonTitle: "",
-        });
-        setPreviewImages([]);
+        const data = await response.json();
+        if (data.redirectTo) {
+          router.push(data.redirectTo); // Redirect to the provided URL
+        } else {
+          alert("Car created successfully, but no redirect URL provided.");
+        }
       } else {
         const errorData = await response.json();
         alert(`Failed to add car: ${errorData.error}`);
@@ -312,7 +285,7 @@ export default function Sell() {
 
           {/* Payout  */}
           <Typography variant="h5" sx={{ mt: 2, color: "#fff" }}>
-            Payouts
+            Auction Details
           </Typography>
           <TextField
             label="Minimum Bid"
@@ -330,6 +303,21 @@ export default function Sell() {
             required
             sx={textFieldStyles}
           />
+          <TextField
+            label="End Time"
+            name="endTime"
+            select
+            value={formData.endTime}
+            onChange={handleChange}
+            required
+            sx={textFieldStyles}
+          >
+            <MenuItem value={"3 Days"}>3 Days</MenuItem>
+            <MenuItem value={"5 Days"}>5 Days</MenuItem>
+            <MenuItem value={"1 Week"}>1 Week</MenuItem>
+            <MenuItem value={"2 Weeks"}>2 Weeks</MenuItem>
+            <MenuItem value={"1 Month"}>1 Month</MenuItem>
+          </TextField>
 
           {/* Accident Data */}
           <Typography variant="h5" sx={{ mt: 2, color: "#fff" }}>
