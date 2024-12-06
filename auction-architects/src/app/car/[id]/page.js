@@ -1,5 +1,6 @@
 "use client";
 
+import { useUser } from "@auth0/nextjs-auth0/client";
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
@@ -19,6 +20,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 export default function CheckoutPage() {
   const { id } = useParams(); // Dynamically resolve params
   const [car, setCar] = useState(null);
+  const { user, isLoading } = useUser();
   const [bidAmount, setBidAmount] = useState(""); // To store the bid amount
   const [loading, setLoading] = useState(true);
 
@@ -81,7 +83,7 @@ export default function CheckoutPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ id: car._id, amount: bidAmount }),
+        body: JSON.stringify({ user: user, id: car._id, amount: bidAmount }),
       });
 
       if (!response.ok) {
