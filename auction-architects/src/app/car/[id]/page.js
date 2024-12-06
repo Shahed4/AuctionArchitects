@@ -1,40 +1,27 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   Box,
   Container,
   Typography,
   Button,
-  Grid,
   CardMedia,
-  TextField,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Grid,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
-export default function CarDetails({ params: initialParams }) {
-  const router = useRouter();
+export default function CheckoutPage() {
+  const { id } = useParams(); // Dynamically resolve params
   const [car, setCar] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [id, setId] = useState(null);
-  const [bidAmount, setBidAmount] = useState("");
 
-  // Unwrap `params` asynchronously
+  // Fetch car details
   useEffect(() => {
-    const unwrapParams = async () => {
-      if (initialParams) {
-        const resolvedParams = await initialParams;
-        setId(resolvedParams.id);
-      }
-    };
-
-    unwrapParams();
-  }, [initialParams]);
-
-  // Fetch car details after `id` is set
-  useEffect(() => {
-    if (!id) return;
-
     const fetchCarDetails = async () => {
       try {
         const response = await fetch(`/api/cars/${id}`);
@@ -42,57 +29,37 @@ export default function CarDetails({ params: initialParams }) {
         const data = await response.json();
         setCar(data);
       } catch (error) {
-        console.error("Error fetching car details:", error.message);
+        console.error("Error fetching car details:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCarDetails();
+    if (id) fetchCarDetails();
   }, [id]);
 
-  const handleBid = async () => {
-    if (bidAmount <= 0) {
-      alert("Bid amount must be greater than 0!");
-      return;
-    }
-
+  const handleCheckout = async () => {
     try {
-      const response = await fetch(`/api/cars/${id}/bid`, {
+      const response = await fetch("/api/checkout", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ amount: bidAmount }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          carId: car._id,
+          price: car.price,
+          description: car.description,
+          model: car.model,
+        }),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to place bid");
+      const data = await response.json();
+      if (response.ok) {
+        window.location.href = data.url; // Redirect to Stripe Checkout
+      } else {
+        console.error("Checkout error:", data.error);
       }
-
-      const updatedCar = await response.json();
-      setCar(updatedCar);
-      alert("Bid placed successfully!");
     } catch (error) {
-      alert(error.message || "An error occurred while placing the bid.");
+      console.error("Checkout error:", error);
     }
-  };
-
-  const textFieldStyles = {
-    fieldset: { borderColor: "#fff" },
-    "& .MuiOutlinedInput-root:hover fieldset": { borderColor: "#fff" },
-    "& .MuiOutlinedInput-input": { color: "#fff" },
-    "& .MuiInputLabel-root": {
-      color: "#fff",
-      transition: "all 0.2s ease",
-    },
-    "& .MuiInputLabel-root.Mui-focused": {
-      color: "#1976d2",
-    },
-    "& .MuiOutlinedInput-root.Mui-focused fieldset": {
-      borderColor: "#1976d2",
-    },
   };
 
   if (loading) {
@@ -104,6 +71,7 @@ export default function CarDetails({ params: initialParams }) {
           justifyContent: "center",
           height: "100vh",
           color: "#fff",
+          backgroundColor: "#000",
         }}
       >
         <Typography>Loading...</Typography>
@@ -120,95 +88,180 @@ export default function CarDetails({ params: initialParams }) {
           justifyContent: "center",
           height: "100vh",
           color: "#fff",
+          backgroundColor: "#000",
         }}
       >
-        <Typography>Car not found.</Typography>
+        <Typography>Car details not found.</Typography>
       </Box>
     );
   }
 
   return (
     <Box sx={{ backgroundColor: "#000", minHeight: "100vh", color: "#fff", py: 5 }}>
-      <Container maxWidth="md">
-        <Typography variant="h3" sx={{ mb: 4, fontWeight: "bold", color: "#e0e0e0" }}>
-          {car.year} {car.model}
+      <Container maxWidth="lg">
+        <Typography textAlign="center" variant="h3" sx={{ mb: 4, fontWeight: "bold", color: "#e0e0e0" }}>
+          Checkout for {car.model}
         </Typography>
 
-        {/* Display Car Images */}
-        {car.images && car.images.length > 0 ? (
-          <Grid container spacing={2} sx={{ mb: 4 }}>
-            {car.images.map((image, index) => (
-              <Grid item xs={12} key={index}>
-                <CardMedia
-                  component="img"
-                  image={image}
-                  alt={`Car image ${index + 1}`}
-                  sx={{
-                    width: "100%",
-                    height: "auto",
-                    borderRadius: 2,
-                    boxShadow: "0px 4px 10px rgba(255,255,255,0.2)",
-                  }}
-                />
-              </Grid>
-            ))}
+        <Grid container spacing={2}>
+          {/* Image Section */}
+          <Grid item xs={12} md={8}>
+            {car.images && car.images.length > 0 ? (
+              <CardMedia
+                component="img"
+                image={car.images[0]} // Display the first image
+                alt={`${car.model} image`}
+                sx={{
+                  width: "100%",
+                  height: "auto",
+                  borderRadius: 2,
+                  boxShadow: "0 4px 10px rgba(255, 255, 255, 0.2)",
+                  mb: 4,
+                }}
+              />
+            ) : (
+              <Typography sx={{ color: "#e0e0e0", mb: 4 }}>
+                No images attached.
+              </Typography>
+            )}
           </Grid>
-        ) : (
-          <Typography>No images available for this car.</Typography>
-        )}
 
-        {/* Car Details */}
-        <Box>
-          <Typography variant="h6">Description:</Typography>
-          <Typography>{car.description}</Typography>
-        </Box>
+          {/* Contact Information Section */}
+          <Grid item xs={12} md={4}>
+            <Box
+              sx={{
+                backgroundColor: "#1a1a1a",
+                padding: 2,
+                borderRadius: 2,
+                boxShadow: "0 4px 10px rgba(255, 255, 255, 0.2)",
+              }}
+            >
+              <Typography variant="h6" textAlign={"center"} sx={{ mb: 2, color: "#fff" }}>
+                Contact Information
+              </Typography>
+              <Typography>
+                <strong>Name:</strong> {car.name || "Not provided"}
+              </Typography>
+              <Typography>
+                <strong>Phone:</strong> {car.phone || "Not provided"}
+              </Typography>
+            </Box>
+          </Grid>
+        </Grid>
 
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="h6">Current Bid:</Typography>
-          <Typography>${car.currentBid || "No bids yet"}</Typography>
-        </Box>
+        {/* Pricing Information */}
+        <Typography variant="h5" sx={{ mt: 3, mb: 2, color: "#fff" }}>
+          Minimum Bid: ${car.minBid || "N/A"}
+        </Typography>
+        <Typography variant="h5" sx={{ mb: 2, color: "#fff" }}>
+          Buy Now Price: ${car.price || "N/A"}
+        </Typography>
 
-        {/* Accident Data */}
-        <Box sx={{ mt: 4 }}>
-          <Typography variant="h5" sx={{ mb: 2 }}>
-            Accident Data
-          </Typography>
-          <Typography>Accident History: {car.accidentHistory || "N/A"}</Typography>
-          <Typography>Damage Severity: {car.damageSeverity || "N/A"}</Typography>
-          <Typography>Point of Impact: {car.pointOfImpact || "N/A"}</Typography>
-          <Typography>Repair Records: {car.repairRecords || "N/A"}</Typography>
-          <Typography>Airbag Deployment: {car.airbagDeployment || "N/A"}</Typography>
-          <Typography>Structural Damage: {car.structuralDamage || "N/A"}</Typography>
-        </Box>
+        {/* Accordion Sections in Columns */}
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={4}>
+            <Accordion
+              disableGutters
+              sx={{
+                backgroundColor: "#1a1a1a",
+                color: "#fff",
+                "&:not(.Mui-expanded)": {
+                  boxShadow: "0 2px 5px rgba(255, 255, 255, 0.2)",
+                },
+              }}
+            >
+              <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: "#fff" }} />}>
+                <Typography>Accident Data</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Typography>History: {car.accidentHistory || "N/A"}</Typography>
+                {car.accidentHistory === "yes" && (
+                  <>
+                    <Typography>Damage Severity: {car.damageSeverity}</Typography>
+                    <Typography>Point of Impact: {car.pointOfImpact}</Typography>
+                    <Typography>Airbag Deployment: {car.airbagDeployment}</Typography>
+                    <Typography>Structural Damage: {car.structuralDamage}</Typography>
+                  </>
+                )}
+              </AccordionDetails>
+            </Accordion>
+          </Grid>
 
-        {/* Place Bid Section */}
-        <Box sx={{ mt: 4, display: "flex", flexDirection: "column", gap: 2 }}>
-          <Button
-            variant="contained"
-            sx={{ backgroundColor: "#1976d2", color: "#fff" }}
-            onClick={() => router.push(`/checkout/${id}`)}
-          >
-            Buy Now
-          </Button>
+          <Grid item xs={12} md={4}>
+            <Accordion
+              disableGutters
+              sx={{
+                backgroundColor: "#1a1a1a",
+                color: "#fff",
+                "&:not(.Mui-expanded)": {
+                  boxShadow: "0 2px 5px rgba(255, 255, 255, 0.2)",
+                },
+              }}
+            >
+              <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: "#fff" }} />}>
+                <Typography>Service History</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Typography>Oil Changes: {car.oilChanges || "N/A"}</Typography>
+                <Typography>Tire Rotations: {car.tireRotations || "N/A"}</Typography>
+                <Typography>Open Recalls: {car.openRecalls || "N/A"}</Typography>
+                <Typography>
+                  Brake Rotor Replaced: {car.brakeRotorReplaced || "N/A"}
+                </Typography>
+                <Typography>
+                  Transmission Replaced: {car.transmissionReplaced || "N/A"}
+                </Typography>
+              </AccordionDetails>
+            </Accordion>
+          </Grid>
 
-          <Typography variant="h6">Place Your Bid:</Typography>
-          <TextField
-            type="number"
-            value={bidAmount}
-            onChange={(e) => setBidAmount(e.target.value)}
-            label="Enter bid amount"
-            variant="outlined"
-            sx={textFieldStyles}
-            InputLabelProps={{ style: { color: "#fff" } }}
-          />
-          <Button
-            variant="contained"
-            sx={{ backgroundColor: "#1976d2", color: "#fff" }}
-            onClick={handleBid}
-          >
-            Submit Bid
-          </Button>
-        </Box>
+          <Grid item xs={12} md={4}>
+            <Accordion
+              disableGutters
+              sx={{
+                backgroundColor: "#1a1a1a",
+                color: "#fff",
+                "&:not(.Mui-expanded)": {
+                  boxShadow: "0 2px 5px rgba(255, 255, 255, 0.2)",
+                },
+              }}
+            >
+              <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: "#fff" }} />}>
+                <Typography>Ownership History</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Typography>Previous Owners: {car.previousOwners || "N/A"}</Typography>
+                <Typography>
+                  Ownership States: {car.ownershipStates || "N/A"}
+                </Typography>
+                <Typography>
+                  Ownership Length: {car.ownershipLength || "N/A"}
+                </Typography>
+                <Typography>
+                  Last Reported Mileage: {car.lastReportedMileage || "N/A"}
+                </Typography>
+                <Typography>
+                  Current Odometer Reading: {car.currentOdometerReading || "N/A"}
+                </Typography>
+              </AccordionDetails>
+            </Accordion>
+          </Grid>
+        </Grid>
+
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleCheckout}
+          sx={{
+            mt: 3,
+            backgroundColor: "#1976d2",
+            "&:hover": {
+              backgroundColor: "#1565c0",
+            },
+          }}
+        >
+          Proceed to Checkout
+        </Button>
       </Container>
     </Box>
   );
