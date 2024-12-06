@@ -89,6 +89,12 @@ export default function Sell() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if(formData.phone.toString().length != 10) {
+      alert("Must enter a real phone number.");
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -209,6 +215,10 @@ export default function Sell() {
           <TextField
             label="Phone Number"
             name="phone"
+            type="number"
+            inputProps={{
+              maxLength: 10,
+            }}
             value={formData.phone}
             onChange={handleChange}
             required
