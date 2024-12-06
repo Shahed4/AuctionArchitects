@@ -69,10 +69,29 @@ export default function CheckoutPage() {
   };
 
   const handleBid = async () => {
+    if (!car.showListing) {
+      alert("Listing Not Available");
+      return;
+    } else if (car.listingClosed) {
+      alert("Listing Has Closed");
+      return;
+    }
+
+    if (!user) {
+      alert("Login to Bid.");
+      return;
+    }
+
+    if (bidAmount >= car.price) {
+      handleCheckout();
+      return;
+    }
+
     if (car.numBids == 0 && bidAmount < car.currBid) {
+      // First Bid to Be Made
       alert("Must place a bid above starting bid.");
       return;
-    } else if (car.numBids != 0 && bidAmount < car.currBid + 500) {
+    } else if (bidAmount < car.currBid + 500) {
       alert("Must place a bid of at least $500 more than current bid.");
       return;
     }
@@ -116,7 +135,7 @@ export default function CheckoutPage() {
     );
   }
 
-  if (!car) {
+  if (!car || !car.showListing) {
     return (
       <Box
         sx={{
@@ -154,6 +173,9 @@ export default function CheckoutPage() {
           }}
         >
           {car.year} {car.make} {car.model}
+          {(car.currBid >= car.price || car.listingClosed) && (
+            <> - (Auction Closed)</>
+          )}
         </Typography>
 
         <Grid container spacing={2}>
@@ -216,7 +238,7 @@ export default function CheckoutPage() {
 
         {/* Pricing Information */}
         <Typography variant="h5" sx={{ mt: 3, mb: 2, color: "#fff" }}>
-          Minimum Bid: ${car.minBid || "N/A"}
+          Current Bid: ${car.currBid || "N/A"}
         </Typography>
         <Typography variant="h5" sx={{ mb: 2, color: "#fff" }}>
           Buy Now Price: ${car.price || "N/A"}
@@ -251,61 +273,62 @@ export default function CheckoutPage() {
           ))}
         </Grid>
 
-        {(!car.listingClosed || !car.showListing) && (
-          <>
-            {/* Bid and Buy Now Section */}
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mt: 4,
-                mb: 3,
-              }}
-            >
-              {/* Bid Input */}
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <TextField
-                  label="Enter Bid Amount"
-                  type="number"
-                  variant="outlined"
-                  value={bidAmount}
-                  onChange={(e) => setBidAmount(e.target.value)}
-                  InputLabelProps={{ style: { color: "#fff" } }}
-                  sx={{
-                    width: "200px",
-                    "& .MuiOutlinedInput-root": {
-                      backgroundColor: "#1a1a1a",
-                      color: "#fff",
-                    },
-                  }}
-                />
-                <Button
-                  variant="contained"
-                  onClick={handleBid}
-                  sx={{
-                    backgroundColor: "#4caf50",
-                    "&:hover": { backgroundColor: "#388e3c" },
-                  }}
-                >
-                  Place Bid
-                </Button>
-              </Box>
-
-              {/* Buy Now Button */}
-              <Button
-                variant="contained"
-                onClick={handleCheckout}
+        {car.currBid < car.price ||
+          (car.listingClosed && (
+            <>
+              {/* Bid and Buy Now Section */}
+              <Box
                 sx={{
-                  backgroundColor: "#1976d2",
-                  "&:hover": { backgroundColor: "#1565c0" },
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mt: 4,
+                  mb: 3,
                 }}
               >
-                Buy Now
-              </Button>
-            </Box>
-          </>
-        )}
+                {/* Bid Input */}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <TextField
+                    label="Enter Bid Amount"
+                    type="number"
+                    variant="outlined"
+                    value={bidAmount}
+                    onChange={(e) => setBidAmount(e.target.value)}
+                    InputLabelProps={{ style: { color: "#fff" } }}
+                    sx={{
+                      width: "200px",
+                      "& .MuiOutlinedInput-root": {
+                        backgroundColor: "#1a1a1a",
+                        color: "#fff",
+                      },
+                    }}
+                  />
+                  <Button
+                    variant="contained"
+                    onClick={handleBid}
+                    sx={{
+                      backgroundColor: "#4caf50",
+                      "&:hover": { backgroundColor: "#388e3c" },
+                    }}
+                  >
+                    Place Bid
+                  </Button>
+                </Box>
+
+                {/* Buy Now Button */}
+                <Button
+                  variant="contained"
+                  onClick={handleCheckout}
+                  sx={{
+                    backgroundColor: "#1976d2",
+                    "&:hover": { backgroundColor: "#1565c0" },
+                  }}
+                >
+                  Buy Now
+                </Button>
+              </Box>
+            </>
+          ))}
       </Container>
     </Box>
   );
