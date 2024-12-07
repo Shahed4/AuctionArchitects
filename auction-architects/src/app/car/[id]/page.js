@@ -16,6 +16,8 @@ import {
   TextField,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos"; // Import left arrow icon
+import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos"; // Import right arrow icon
 
 export default function CheckoutPage() {
   const { id } = useParams(); // Dynamically resolve params
@@ -41,6 +43,21 @@ export default function CheckoutPage() {
 
     if (id) fetchCarDetails();
   }, [id]);
+  
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const handlePrevImage = () => {
+    if (currentImageIndex > 0) {
+      setCurrentImageIndex((prevIndex) => prevIndex - 1);
+    }
+  };
+  
+  const handleNextImage = () => {
+    if (currentImageIndex < car.images.length - 1) {
+      setCurrentImageIndex((prevIndex) => prevIndex + 1);
+    }
+  };
+  
 
   const handleCheckout = async () => {
     try {
@@ -178,63 +195,141 @@ export default function CheckoutPage() {
           )}
         </Typography>
 
-        <Grid container spacing={2}>
-          {/* Image Section */}
-          <Grid item xs={12} md={8}>
-            {car.images?.length ? (
-              <CardMedia
-                component="img"
-                image={car.images[0]}
-                alt={`${car.model} image`}
-                sx={{
-                  width: "100%",
-                  height: "auto",
-                  borderRadius: 2,
-                  boxShadow: "0 4px 10px rgba(255, 255, 255, 0.2)",
-                  mb: 4,
-                }}
-              />
-            ) : (
-              <Typography sx={{ color: "#e0e0e0", mb: 4 }}>
-                No images attached.
-              </Typography>
-            )}
-          </Grid>
-
-          {/* Contact Information Section */}
-          <Grid item xs={12} md={4}>
-            <Box
+        <Grid container spacing={4}>
+  {/* Image Section */}
+  <Grid item xs={12} md={8}>
+    <Box sx={{ position: "relative", textAlign: "center" }}>
+      {car.images?.length ? (
+        <>
+          <CardMedia
+            component="img"
+            image={`https://utfs.io/f/${car.images[currentImageIndex]}`}
+            alt={`${car.model} image`}
+            sx={{
+              width: "90%", // Make the image smaller
+              height: "auto",
+              borderRadius: 2,
+              boxShadow: "0 4px 10px rgba(255, 255, 255, 0.2)",
+            }}
+          />
+          {/* Left Arrow */}
+          {currentImageIndex > 0 && (
+            <Button
+              onClick={handlePrevImage}
               sx={{
-                backgroundColor: "#1a1a1a",
-                p: 2,
-                borderRadius: 2,
-                boxShadow: "0 4px 10px rgba(255, 255, 255, 0.2)",
+                position: "absolute",
+                top: "50%",
+                left: 0,
+                transform: "translateY(-50%)",
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                color: "#fff",
+                "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.8)" },
+                zIndex: 1,
               }}
             >
-              <Typography
-                variant="h6"
-                textAlign="center"
-                sx={{ mb: 2, color: "#fff" }}
-              >
-                Contact Information
-              </Typography>
-              <Typography>
-                <strong>Name:</strong> {car.name || "Not provided"}
-              </Typography>
-              <Typography>
-                <strong>Phone:</strong> {car.phone || "Not provided"}
-              </Typography>
-              <Typography>
-                <strong>Area:</strong> {car.address || "Not provided"}
-              </Typography>
-            </Box>
-          </Grid>
-        </Grid>
+              <ArrowBackIosIcon />
+            </Button>
+          )}
+          {/* Right Arrow */}
+          {currentImageIndex < car.images.length - 1 && (
+            <Button
+              onClick={handleNextImage}
+              sx={{
+                position: "absolute",
+                top: "50%",
+                right: 0,
+                transform: "translateY(-50%)",
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                color: "#fff",
+                "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.8)" },
+                zIndex: 1,
+              }}
+            >
+              <ArrowForwardIosIcon />
+            </Button>
+          )}
+        </>
+      ) : (
+        <Typography
+          variant="h6"
+          sx={{
+            color: "#e0e0e0",
+            border: "2px dashed #e0e0e0",
+            padding: 2,
+            borderRadius: 2,
+          }}
+        >
+          No images attached.
+        </Typography>
+      )}
+    </Box>
+  </Grid>
 
-        {/* Description Section */}
-        <Box>
-          <Typography sx={{ mt: 3 }}>{car.description}</Typography>
-        </Box>
+  {/* Contact Information Section */}
+  <Grid item xs={12} md={4}>
+    <Box
+      sx={{
+        backgroundColor: "#1a1a1a",
+        p: 2,
+        borderRadius: 2,
+        boxShadow: "0 4px 10px rgba(255, 255, 255, 0.2)",
+      }}
+    >
+      <Typography
+        variant="h6"
+        textAlign="center"
+        sx={{ mb: 2, color: "#fff" }}
+      >
+        Contact Information
+      </Typography>
+      <Typography>
+        <strong>Name:</strong> {car.name || "Not provided"}
+      </Typography>
+      <Typography>
+        <strong>Phone:</strong> {car.phone || "Not provided"}
+      </Typography>
+      <Typography>
+        <strong>Area:</strong> {car.address || "Not provided"}
+      </Typography>
+    </Box>
+  </Grid>
+</Grid>
+
+
+  <Container
+  maxWidth="md" // Restrict width
+  sx={{
+    overflowX: "hidden", // Prevent horizontal overflow
+    paddingX: 3, // Add padding for better appearance
+  }}
+>
+  <Grid container spacing={2}>
+    {/* Description Section */}
+    <Grid item xs={12}>
+      <Box
+        sx={{
+          mt: 3,
+          maxWidth: "100%", // Keep text within container
+          wordBreak: "break-word", // Wrap long words
+          overflowWrap: "break-word", // Ensure consistent wrapping
+          hyphens: "auto", // Add hyphenation for readability
+        }}
+      >
+        <Typography
+          variant="body1"
+          sx={{
+            textAlign: "justify", // Optional: Align text for better readability
+          }}
+        >
+          {car.description || "No description available."}
+        </Typography>
+      </Box>
+    </Grid>
+  </Grid>
+</Container>
+
+
+
 
         {/* Pricing Information */}
         <Typography variant="h5" sx={{ mt: 3, mb: 2, color: "#fff" }}>
