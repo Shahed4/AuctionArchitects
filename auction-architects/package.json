@@ -14,17 +14,24 @@
     "@emotion/styled": "^11.13.5",
     "@mui/icons-material": "^6.1.10",
     "@mui/material": "^6.1.10",
+    "@uploadthing/react": "^7.1.2",
     "auth0": "^4.14.0",
     "dotenv": "^16.4.5",
+    "jsonwebtoken": "^9.0.2",
+    "jwks-rsa": "^3.1.0",
     "mongodb": "^6.11.0",
     "multer": "^1.4.5-lts.1",
     "next": "^15.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "stripe": "^17.4.0"
+    "stripe": "^17.4.0",
+    "uploadthing": "^7.4.0"
   },
   "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@types/react": "^19.0.1",
     "eslint": "^8",
-    "eslint-config-next": "15.0.3"
+    "eslint-config-next": "15.0.3",
+    "typescript": "^5.7.2"
   }
 }
