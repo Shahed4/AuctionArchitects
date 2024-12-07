@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import {
   AppBar,
@@ -236,6 +237,7 @@ export default function Home() {
           </Grid>
         </Box>
       </Container>
+    
     </Box>
   );
 }

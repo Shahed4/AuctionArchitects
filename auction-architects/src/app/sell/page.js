@@ -1,4 +1,6 @@
 "use client";
+import "@uploadthing/react/styles.css";
+import { UploadButton } from "@uploadthing/react";
 
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
@@ -125,6 +127,121 @@ export default function Sell() {
     }
   };
 
+  {/*vvIMAGE FUNCTIONS*/}
+  // Component for acknowledgment
+const Acknowledgment = () => (
+  <div className={styles.acknowledgment}>
+    <span className={styles.acknowledgmentIcon}>✔</span>
+    <span className={styles.acknowledgmentText}>Images Received!</span>
+  </div>
+);
+
+// Function to handle delete functionality
+const handleDelete = (key, name, fileNameSpan, fileEntry) => {
+  window.uploadedKeys = window.uploadedKeys.filter(
+    (uploadedKey) => uploadedKey !== key
+  );
+
+  console.log(`File deleted: ${name}`);
+  console.log("Updated uploaded keys:", window.uploadedKeys);
+
+  // Strike through the file name
+  fileNameSpan.style.textDecoration = "line-through";
+  fileNameSpan.style.color = "gray";
+
+  // Optionally, remove the entry entirely
+  // fileEntry.remove();
+};
+
+// Component for file entry
+const FileEntry = ({ key, name, imageUrl }) => {
+  const fileEntryRef = React.useRef(null);
+
+  return (
+    <div id={`file-entry-${key}`} className={styles.fileEntry} ref={fileEntryRef}>
+      <img src={imageUrl} alt={name} className={styles.image} />
+      <span className={styles.fileName} id={`file-name-${key}`}>
+        File Name: {name}
+      </span>
+      <button
+        id={`delete-btn-${key}`}
+        className={styles.deleteButton}
+        onClick={() =>
+          handleDelete(
+            key,
+            name,
+            fileEntryRef.current.querySelector(`#file-name-${key}`),
+            fileEntryRef.current
+          )
+        }
+      >
+        Delete
+      </button>
+    </div>
+  );
+};
+
+// Main Upload Component
+const UploadComponent = () => {
+  const handleUploadComplete = (res) => {
+    if (!window.uploadedKeys) {
+      window.uploadedKeys = [];
+    }
+
+    // Append new keys to the array
+    res.forEach(({ key }) => {
+      if (!window.uploadedKeys.includes(key)) {
+        window.uploadedKeys.push(key);
+      }
+    });
+
+    console.log("Files uploaded successfully: ", res);
+    console.log("Updated uploaded keys:", window.uploadedKeys);
+
+    const uploadContainer = document.querySelector("main");
+    let messageContainer = document.querySelector("#message-container");
+
+    if (!messageContainer) {
+      messageContainer = document.createElement("div");
+      messageContainer.id = "message-container";
+      messageContainer.className = styles.messageContainer;
+      uploadContainer.appendChild(messageContainer);
+
+      // Add acknowledgment
+      const acknowledgment = document.createElement("div");
+      ReactDOM.render(<Acknowledgment />, acknowledgment);
+      messageContainer.appendChild(acknowledgment);
+    }
+
+    // Add or update file list
+    let fileList = messageContainer.querySelector("#file-list");
+    if (!fileList) {
+      fileList = document.createElement("div");
+      fileList.id = "file-list";
+      fileList.className = styles.fileList;
+      messageContainer.appendChild(fileList);
+    }
+
+    res.forEach(({ key, name }) => {
+      if (!fileList.querySelector(`#file-entry-${key}`)) {
+        const imageUrl = `https://utfs.io/f/${key}`;
+        const fileEntryWrapper = document.createElement("div");
+        ReactDOM.render(
+          <FileEntry key={key} name={name} imageUrl={imageUrl} />,
+          fileEntryWrapper
+        );
+        fileList.appendChild(fileEntryWrapper);
+      }
+    });
+  };
+
+  const handleUploadError = (error) => {
+    console.error(`ERROR! ${error.message}`);
+  };
+
+
+  {/*^^IMAGE FUNCTIONS*/}
+
   const textFieldStyles = {
     fieldset: { borderColor: "#fff" },
     "& .MuiOutlinedInput-root:hover fieldset": { borderColor: "#fff" },
@@ -140,6 +257,21 @@ export default function Sell() {
       borderColor: "#1976d2",
     },
   };
+
+  const styles = {
+    main: "flex min-h-screen flex-col items-center justify-between p-24",
+    messageContainer: "flex flex-col items-center mt-4 w-full",
+    acknowledgment: "flex items-center mb-4",
+    acknowledgmentIcon: "text-green-500 text-xl font-bold",
+    acknowledgmentText: "ml-2 text-green-500 font-medium",
+    fileList: "flex flex-col items-start w-full",
+    fileEntry: "flex items-center mb-4 w-full space-y-4 border-t pt-4",
+    image: "w-10 h-10 rounded-md mr-4 border border-gray-300",
+    fileName: "text-gray-600 font-medium flex-grow",
+    deleteButton:
+      "bg-gray-300 text-gray-600 px-4 py-2 rounded-md hover:bg-red-500 hover:text-white font-medium transition-colors",
+  };
+  
 
   return (
     <Box
@@ -505,24 +637,17 @@ export default function Sell() {
           </TextField>
 
           {/* Upload Images */}
-          <Button variant="contained" component="label">
-            Upload Pictures
-            <input type="file" hidden multiple onChange={handleFileChange} />
-          </Button>
 
-          {previewImages.length > 0 && (
-            <Grid container spacing={2}>
-              {previewImages.map((image, index) => (
-                <Grid item xs={6} key={index}>
-                  <img
-                    src={image}
-                    alt={`Preview ${index}`}
-                    style={{ width: "100%", borderRadius: "8px" }}
-                  />
-                </Grid>
-              ))}
-            </Grid>
-          )}
+          <main className={styles.main}>
+      <UploadButton
+        endpoint="imageUploader"
+        onClientUploadComplete={handleUploadComplete}
+        onUploadError={handleUploadError}
+      />
+    </main>
+
+
+
 
           {/* Submit Button */}
           <Button
@@ -541,4 +666,5 @@ export default function Sell() {
       </Container>
     </Box>
   );
+}
 }
