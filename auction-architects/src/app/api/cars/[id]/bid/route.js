@@ -1,12 +1,14 @@
-import clientPromise from "../../../../../../lib/mongodb"; // Update this with your MongoDB connection file
+import clientPromise from "../../../../../../lib/mongodb";
 import { getSession } from "@auth0/nextjs-auth0";
 import { ObjectId } from "mongodb";
+import Stripe from "stripe";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export async function POST(req) {
   try {
-    const { user, id, amount } = await req.json(); // Bid amount
+    const { user, id, amount } = await req.json();
 
-    // Validate id
     if (!id || !ObjectId.isValid(id)) {
       return new Response(
         JSON.stringify({ error: "Invalid or missing car ID." }),
@@ -14,9 +16,8 @@ export async function POST(req) {
       );
     }
 
-    const userId = user.sub; // Auth0 user ID
+    const userId = user.sub;
     const client = await clientPromise;
-
     const db = client.db("Auction");
 
     // Find the car
@@ -25,65 +26,100 @@ export async function POST(req) {
     if (!car || !car.showListing || car.listingClosed) {
       return new Response(
         JSON.stringify({ error: "Car Listing Not Found/Available." }),
-        {
-          status: 404,
-        }
+        { status: 404 }
       );
     }
 
-    // If Lisiting Closed Due to Time, We need to Update
+    // Check if listing has closed due to time
     if (new Date(car.endTime) <= Date.now()) {
-      const updatedCar = await db.collection("cars").findOneAndUpdate(
+      await db.collection("cars").updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { listingClosed: true } }
+      );
+      return new Response(JSON.stringify({ error: "Bidding is Closed" }), {
+        status: 400,
+      });
+    }
+
+    const bidAmount = parseFloat(amount);
+    const currentBid = parseFloat(car.currBid);
+    const bidDifference = car.price - currentBid;
+
+    console.log("Current Bid:", currentBid);
+    console.log("Bid Amount:", bidAmount);
+    console.log("Bid Difference:", bidDifference);
+
+    // Check if bid equals "Buy Now" price
+    if (bidAmount === car.price) {
+      const result = await db.collection("cars").updateOne(
         { _id: new ObjectId(id) },
         {
-          $set: { listingClosed: true },
-        },
-        { returnDocument: "after" }
+          $set: { showListing: false, listingClosed: true, bidderId: userId },
+          $push: { bids: { userId, amount: bidAmount, timestamp: new Date() } },
+        }
       );
 
-      return new Response(JSON.stringify({ error: "Bidding is Closed" }), {
-        status: 400,
+      if (result.modifiedCount === 0) {
+        return new Response(
+          JSON.stringify({ error: "Failed to Update Car Listing" }),
+          { status: 500 }
+        );
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: `${car.year} ${car.make} ${car.model}`,
+                description: car.description || "No description provided.",
+              },
+              unit_amount: car.price * 100,
+            },
+            quantity: 1,
+          },
+        ],
+        mode: "payment",
+        success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/success`,
+        cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/cancel`,
       });
+
+      return new Response(JSON.stringify({ url: session.url }), { status: 200 });
     }
 
-    // Bidding Price Requirements
-    if (car.currBid >= car.price) {
-      return new Response(JSON.stringify({ error: "Bidding is Closed" }), {
-        status: 400,
-      });
-    }
+    const increment = bidDifference > 1000 ? 500 : 100;
 
-    if (car.numBids == 0 && amount < car.currBid) {
-      return new Response(
-        JSON.stringify({ error: "Bid must be higher than the current price" }),
-        { status: 400 }
-      );
-    } else if (amount < car.currBid + 500) {
+    if (bidAmount < currentBid + increment || bidAmount % increment !== 0) {
       return new Response(
         JSON.stringify({
-          error: "Bid must be $500 higher than the current price",
+          error: `Bid must be at least $${increment} higher than the current bid, in increments of $${increment}.`,
         }),
         { status: 400 }
       );
     }
 
     // Update the car's bid data
-    const updatedCar = await db.collection("cars").findOneAndUpdate(
+    const result = await db.collection("cars").updateOne(
       { _id: new ObjectId(id) },
       {
-        $set: { currBid: parseFloat(amount), bidderId: userId },
+        $set: { currBid: bidAmount, bidderId: userId },
         $inc: { numBids: 1 },
-        $push: { bids: { userId, amount, timestamp: new Date() } },
-      },
-      { returnDocument: "after" }
+        $push: { bids: { userId, amount: bidAmount, timestamp: new Date() } },
+      }
     );
 
-    if (!updatedCar) {
+    if (result.modifiedCount === 0) {
       return new Response(
         JSON.stringify({ error: "Failed to Update Car Listing" }),
         { status: 500 }
       );
     }
+
+    const updatedCar = await db
+      .collection("cars")
+      .findOne({ _id: new ObjectId(id) });
 
     return new Response(JSON.stringify(updatedCar), { status: 200 });
   } catch (error) {
