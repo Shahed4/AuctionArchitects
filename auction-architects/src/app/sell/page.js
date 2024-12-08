@@ -220,11 +220,48 @@ export default function Sell() {
           <TextField
             label="Make"
             name="make"
+            select
             value={formData.make}
             onChange={handleChange}
             required
             sx={textFieldStyles}
-          />
+          >
+            <MenuItem value="Acura">Acura</MenuItem>
+            <MenuItem value="Alfa Romeo">Alfa Romeo</MenuItem>
+            <MenuItem value="Audi">Audi</MenuItem>
+            <MenuItem value="BMW">BMW</MenuItem>
+            <MenuItem value="Buick">Buick</MenuItem>
+            <MenuItem value="Cadillac">Cadillac</MenuItem>
+            <MenuItem value="Chevrolet">Chevrolet</MenuItem>
+            <MenuItem value="Chrysler">Chrysler</MenuItem>
+            <MenuItem value="Dodge">Dodge</MenuItem>
+            <MenuItem value="Fiat">Fiat</MenuItem>
+            <MenuItem value="Ford">Ford</MenuItem>
+            <MenuItem value="GMC">GMC</MenuItem>
+            <MenuItem value="Genesis">Genesis</MenuItem>
+            <MenuItem value="Honda">Honda</MenuItem>
+            <MenuItem value="Hyundai">Hyundai</MenuItem>
+            <MenuItem value="Infiniti">Infiniti</MenuItem>
+            <MenuItem value="Jaguar">Jaguar</MenuItem>
+            <MenuItem value="Jeep">Jeep</MenuItem>
+            <MenuItem value="Kia">Kia</MenuItem>
+            <MenuItem value="Land Rover">Land Rover</MenuItem>
+            <MenuItem value="Lexus">Lexus</MenuItem>
+            <MenuItem value="Lincoln">Lincoln</MenuItem>
+            <MenuItem value="Mazda">Mazda</MenuItem>
+            <MenuItem value="Mercedes-Benz">Mercedes-Benz</MenuItem>
+            <MenuItem value="Mini">Mini</MenuItem>
+            <MenuItem value="Mitsubishi">Mitsubishi</MenuItem>
+            <MenuItem value="Nissan">Nissan</MenuItem>
+            <MenuItem value="Porsche">Porsche</MenuItem>
+            <MenuItem value="Ram">Ram</MenuItem>
+            <MenuItem value="Subaru">Subaru</MenuItem>
+            <MenuItem value="Tesla">Tesla</MenuItem>
+            <MenuItem value="Toyota">Toyota</MenuItem>
+            <MenuItem value="Volkswagen">Volkswagen</MenuItem>
+            <MenuItem value="Volvo">Volvo</MenuItem>
+            <MenuItem value="Other">Other</MenuItem>
+          </TextField>
           <TextField
             label="Model"
             name="model"
