@@ -10,16 +10,21 @@ import {
   Typography,
   TextField,
   Button,
-  Grid,
   MenuItem,
+  Stepper,
+  Step,
+  StepLabel,
 } from "@mui/material";
 
 export default function Sell() {
   const router = useRouter();
+
   const [formData, setFormData] = useState({
+    // Personal Info
     name: "",
     address: "",
     phone: "",
+    // Car Details
     vin: "",
     make: "",
     model: "",
@@ -31,88 +36,201 @@ export default function Sell() {
     endTime: "",
     description: "",
     images: [],
+    // Accident Data
     accidentHistory: "",
     damageSeverity: "",
     pointOfImpact: "",
     repairRecords: "",
     airbagDeployment: "",
     structuralDamage: "",
+    // Service History (Short-Term)
     oilChanges: "",
     tireRotations: "",
-    openRecalls: "",
-    brakeRotorReplaced: "",
+    coolant: "",
+    airFilter: "",
+    tirePressureDepth: "",
+    lights: "",
+    // Service History (Long-Term)
     transmissionReplaced: "",
-    safetyInspections: "",
-    typeOfUse: "",
+    transferCaseFluid: "",
+    shocksStruts: "",
+    coolantFluidExchange: "",
+    sparkPlugs: "",
+    serpentineBelt: "",
+    differential: "",
+    // Ownership
     previousOwners: "",
     ownershipStates: "",
     ownershipLength: "",
-    lastReportedMileage: "",
     currentOdometerReading: "",
     floodOrLemonTitle: "",
   });
 
   const [loading, setLoading] = useState(false);
-  const [previewImages, setPreviewImages] = useState([]);
+  const [step, setStep] = useState(1); // Track which step of the form we're on
+  const [completedSteps, setCompletedSteps] = useState(Array(6).fill(false));
+
+  const steps = [
+    "Personal Information",
+    "Car Details/Auction Details",
+    "Accident Data",
+    "Service History",
+    "Ownership History",
+    "Upload Images"
+  ];
+
+  const textFieldStyles = {
+    fieldset: { borderColor: "#fff" },
+    "& .MuiOutlinedInput-root:hover fieldset": { borderColor: "#fff" },
+    "& .MuiOutlinedInput-input": { color: "#fff" },
+    "& .MuiInputLabel-root": {
+      color: "#fff",
+      transition: "all 0.2s ease",
+    },
+    "& .MuiInputLabel-root.Mui-focused": {
+      color: "#1976d2",
+    },
+    "& .MuiOutlinedInput-root.Mui-focused fieldset": {
+      borderColor: "#1976d2",
+    },
+    "& .MuiSelect-icon": {
+      color: "#fff",
+    },
+    "& .MuiMenuItem-root": {
+      backgroundColor: "#000",
+      color: "#fff",
+      "&:hover": {
+        backgroundColor: "#333"
+      }
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = async (e) => {
-    const files = Array.from(e.target.files);
-    const uploadedImages = [];
+  // Validation function to check required fields per step
+  const validateStep = (currentStep, data) => {
+    let missingFields = [];
 
-    for (let file of files) {
-      const uploadFormData = new FormData();
-      uploadFormData.append("image", file);
-
-      try {
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: uploadFormData,
+    const requiredIfYes = (condition, fields) => {
+      if (condition === "yes") {
+        fields.forEach((field) => {
+          if (!data[field]) missingFields.push(field);
         });
-
-        if (response.ok) {
-          const { filePath } = await response.json();
-          uploadedImages.push(filePath);
-          setPreviewImages((prev) => [...prev, filePath]);
-        } else {
-          console.error("Failed to upload image:", file.name);
-        }
-      } catch (error) {
-        console.error("Image upload error:", error);
       }
+    };
+
+    switch (currentStep) {
+      case 1: // Personal Information
+        if (!data.name) missingFields.push("Name");
+        if (!data.address) missingFields.push("Address");
+        if (!data.phone || data.phone.toString().length !== 10) {
+          missingFields.push("Valid Phone Number (10 digits)");
+        }
+        break;
+      case 2: // Car Details
+        ["vin","make","model","year","color","type","description","minBid","price","endTime"].forEach(field => {
+          if (!data[field]) missingFields.push(field.charAt(0).toUpperCase() + field.slice(1));
+        });
+        break;
+      case 3: // Accident Data
+        if (!data.accidentHistory) {
+          missingFields.push("Accident History");
+        } else {
+          // If accidentHistory is yes, more fields required
+          if (data.accidentHistory === "yes") {
+            ["damageSeverity","pointOfImpact","repairRecords","airbagDeployment","structuralDamage"].forEach(field => {
+              if (!data[field]) missingFields.push(field.charAt(0).toUpperCase() + field.slice(1));
+            });
+          }
+        }
+        break;
+      case 4: // Service History
+        // Short-term
+        ["oilChanges","tireRotations","coolant","airFilter","tirePressureDepth","lights"].forEach(field => {
+          if (!data[field]) missingFields.push(field);
+        });
+        // Long-term
+        ["transmissionReplaced","transferCaseFluid","shocksStruts","coolantFluidExchange","sparkPlugs","serpentineBelt","differential"].forEach(field => {
+          if (!data[field]) missingFields.push(field);
+        });
+        break;
+      case 5: // Ownership History
+        // Based on previous logic, only "floodOrLemonTitle" was set to required in code before.
+        // If you consider other fields required, add them similarly.
+        if (!data.floodOrLemonTitle) missingFields.push("Flood or Lemon Title");
+        break;
+      case 6: // Upload Images
+        // No direct required fields, but must be done before submit. 
+        // Typically images might not be strictly required unless you define so.
+        // If needed, add logic for required images here.
+        break;
+      default:
+        break;
     }
 
-    setFormData((prev) => ({
-      ...prev,
-      images: [...prev.images, ...uploadedImages],
-    }));
+    return { 
+      valid: missingFields.length === 0, 
+      missingFields 
+    };
+  };
+
+  const handleNext = () => {
+    const {valid, missingFields} = validateStep(step, formData);
+    if (!valid) {
+      alert(`Please complete the following fields before continuing:\n- ${missingFields.join("\n- ")}`);
+      return;
+    }
+
+    // Mark the step as completed
+    const updatedCompletedSteps = [...completedSteps];
+    updatedCompletedSteps[step - 1] = true;
+    setCompletedSteps(updatedCompletedSteps);
+
+    setStep((prev) => prev + 1);
+  };
+
+  const handleBack = () => {
+    setStep((prev) => prev - 1);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
-    if (formData.phone.toString().length !== 10) {
-      alert("Must enter a real phone number.");
+    // Validate the final step before submitting
+    const {valid, missingFields} = validateStep(step, formData);
+    if (!valid) {
+      alert(`Please complete the following fields before submitting:\n- ${missingFields.join("\n- ")}`);
       return;
     }
-  
+
+    // Check if all steps are completed
+    const allCompleted = completedSteps.every((completed, idx) => {
+      // For the last step, we just validated above, so we can consider it completed now.
+      return idx === (step - 1) ? true : completed;
+    });
+
+    if (!allCompleted) {
+      const incompleteSteps = steps.filter((_, i) => !completedSteps[i] && i !== (step-1));
+      if (incompleteSteps.length > 0) {
+        alert(`The following sections are incomplete:\n- ${incompleteSteps.join("\n- ")}`);
+        return;
+      }
+    }
+
     setLoading(true);
-  
+
     try {
-      // Merge uploaded keys into formData.images on submit
-      const allImages = window.uploadedKeys || []; // Safeguard in case it's undefined
+      const allImages = window.uploadedKeys || [];
       const updatedFormData = { ...formData, images: allImages };
-  
+
       const response = await fetch("/api/cars", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedFormData),
       });
-  
+
       if (response.ok) {
         const data = await response.json();
         if (data.redirectTo) {
@@ -130,40 +248,52 @@ export default function Sell() {
       setLoading(false);
     }
   };
-  
-
-  const textFieldStyles = {
-    fieldset: { borderColor: "#fff" },
-    "& .MuiOutlinedInput-root:hover fieldset": { borderColor: "#fff" },
-    "& .MuiOutlinedInput-input": { color: "#fff" },
-    "& .MuiInputLabel-root": {
-      color: "#fff",
-      transition: "all 0.2s ease",
-    },
-    "& .MuiInputLabel-root.Mui-focused": {
-      color: "#1976d2",
-    },
-    "& .MuiOutlinedInput-root.Mui-focused fieldset": {
-      borderColor: "#1976d2",
-    },
-  };
 
   return (
-
     <Box
       sx={{ backgroundColor: "#000", minHeight: "100vh", color: "#fff", py: 5 }}
     >
-    <NavBar /> 
-
-
+      <NavBar />
       <Container maxWidth="md">
-
         <Typography
           variant="h3"
-          sx={{ mb: 4, fontWeight: "bold", color: "#e0e0e0" }}
+          sx={{ mb: 4, fontWeight: "bold", color: "#e0e0e0", textAlign: "center" }}
         >
           Sell Your Car
         </Typography>
+
+        {/* Stepper for Progress */}
+        <Box sx={{ mb: 4 }}>
+          <Stepper
+            activeStep={step - 1}
+            alternativeLabel
+            sx={{
+              '& .MuiStepLabel-label': {
+                color: '#fff',
+              },
+              '& .MuiStepLabel-label.Mui-active': {
+                color: '#1976d2',
+                fontWeight: 'bold'
+              },
+              '& .MuiStepIcon-root.Mui-active': {
+                color: '#1976d2'
+              },
+              '& .MuiStepIcon-root.Mui-completed': {
+                color: '#1976d2'
+              },
+              '& .MuiStepIcon-text': {
+                fill: '#fff'
+              }
+            }}
+          >
+            {steps.map((label, index) => (
+              <Step completed={completedSteps[index]} key={label}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+        </Box>
+
         <Box
           component="form"
           onSubmit={handleSubmit}
@@ -177,503 +307,547 @@ export default function Sell() {
             boxShadow: "0px 4px 10px rgba(255,255,255,0.2)",
           }}
         >
-          {/* Personal Information */}
-          <Typography variant="h5" sx={{ mt: 2, color: "#fff" }}>
-            Personal Information
-          </Typography>
-          <TextField
-            label="Your Name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            sx={textFieldStyles}
-          />
-          <TextField
-            label="Address"
-            name="address"
-            value={formData.address}
-            onChange={handleChange}
-            required
-            sx={textFieldStyles}
-          />
-          <TextField
-            label="Phone Number"
-            name="phone"
-            type="number"
-            inputProps={{
-              maxLength: 10,
-            }}
-            value={formData.phone}
-            onChange={handleChange}
-            required
-            sx={textFieldStyles}
-          />
-
-          {/* Car Details */}
-          <Typography variant="h5" sx={{ mt: 2, color: "#fff" }}>
-            Car Details
-          </Typography>
-          <TextField
-            label="VIN"
-            name="vin"
-            value={formData.vin}
-            onChange={handleChange}
-            required
-            sx={textFieldStyles}
-          />
-          <TextField
-            label="Make"
-            name="make"
-            select
-            value={formData.make}
-            onChange={handleChange}
-            required
-            sx={textFieldStyles}
-          >
-            <MenuItem value="Acura">Acura</MenuItem>
-            <MenuItem value="Alfa Romeo">Alfa Romeo</MenuItem>
-            <MenuItem value="Audi">Audi</MenuItem>
-            <MenuItem value="BMW">BMW</MenuItem>
-            <MenuItem value="Buick">Buick</MenuItem>
-            <MenuItem value="Cadillac">Cadillac</MenuItem>
-            <MenuItem value="Chevrolet">Chevrolet</MenuItem>
-            <MenuItem value="Chrysler">Chrysler</MenuItem>
-            <MenuItem value="Dodge">Dodge</MenuItem>
-            <MenuItem value="Fiat">Fiat</MenuItem>
-            <MenuItem value="Ford">Ford</MenuItem>
-            <MenuItem value="GMC">GMC</MenuItem>
-            <MenuItem value="Genesis">Genesis</MenuItem>
-            <MenuItem value="Honda">Honda</MenuItem>
-            <MenuItem value="Hyundai">Hyundai</MenuItem>
-            <MenuItem value="Infiniti">Infiniti</MenuItem>
-            <MenuItem value="Jaguar">Jaguar</MenuItem>
-            <MenuItem value="Jeep">Jeep</MenuItem>
-            <MenuItem value="Kia">Kia</MenuItem>
-            <MenuItem value="Land Rover">Land Rover</MenuItem>
-            <MenuItem value="Lexus">Lexus</MenuItem>
-            <MenuItem value="Lincoln">Lincoln</MenuItem>
-            <MenuItem value="Mazda">Mazda</MenuItem>
-            <MenuItem value="Mercedes-Benz">Mercedes-Benz</MenuItem>
-            <MenuItem value="Mini">Mini</MenuItem>
-            <MenuItem value="Mitsubishi">Mitsubishi</MenuItem>
-            <MenuItem value="Nissan">Nissan</MenuItem>
-            <MenuItem value="Porsche">Porsche</MenuItem>
-            <MenuItem value="Ram">Ram</MenuItem>
-            <MenuItem value="Subaru">Subaru</MenuItem>
-            <MenuItem value="Tesla">Tesla</MenuItem>
-            <MenuItem value="Toyota">Toyota</MenuItem>
-            <MenuItem value="Volkswagen">Volkswagen</MenuItem>
-            <MenuItem value="Volvo">Volvo</MenuItem>
-            <MenuItem value="Other">Other</MenuItem>
-          </TextField>
-          <TextField
-            label="Model"
-            name="model"
-            value={formData.model}
-            onChange={handleChange}
-            required
-            sx={textFieldStyles}
-          />
-          <TextField
-            label="Year"
-            name="year"
-            value={formData.year}
-            type="number"
-            onChange={handleChange}
-            required
-            sx={textFieldStyles}
-          />
-          <TextField
-            label="Color"
-            name="color"
-            value={formData.color}
-            onChange={handleChange}
-            required
-            sx={textFieldStyles}
-          />
-          <TextField
-            label="Type"
-            name="type"
-            select
-            value={formData.type}
-            onChange={handleChange}
-            required
-            sx={textFieldStyles}
-          >
-            <MenuItem value="SUV">SUV</MenuItem>
-            <MenuItem value="Sedan">Sedan</MenuItem>
-            <MenuItem value="Coupe">Coupe</MenuItem>
-            <MenuItem value="Sports Car">Sports Car</MenuItem>
-            <MenuItem value="Convertible">Convertible</MenuItem>
-            <MenuItem value="Hybrid">Hybrid</MenuItem>
-            <MenuItem value="Electric Car">Electric Car</MenuItem>
-            <MenuItem value="Hatchback">Hatchback</MenuItem>
-            <MenuItem value="Minivan">Minivan</MenuItem>
-            <MenuItem value="Pickup Truck">Pickup Truck</MenuItem>
-            <MenuItem value="Other">Other</MenuItem>
-          </TextField>
-          <TextField
-            label="Description"
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            required
-            multiline
-            rows={4}
-            sx={textFieldStyles}
-          />
-          <TextField
-            label="Last Reported Mileage"
-            name="lastReportedMileage"
-            value={formData.lastReportedMileage}
-            onChange={handleChange}
-            type="number" // Ensures only numbers can be entered
-            sx={textFieldStyles}
-          />
-
-          {/* Payout  */}
-          <Typography variant="h5" sx={{ mt: 2, color: "#fff" }}>
-            Auction Details
-          </Typography>
-          <TextField
-            label="Minimum Bid"
-            name="minBid"
-            value={formData.minBid}
-            onChange={handleChange}
-            required
-            sx={textFieldStyles}
-          />
-          <TextField
-            label="Buy Now Price"
-            name="price"
-            value={formData.price}
-            onChange={handleChange}
-            required
-            sx={textFieldStyles}
-          />
-          <TextField
-            label="End Time"
-            name="endTime"
-            select
-            value={formData.endTime}
-            onChange={handleChange}
-            required
-            sx={textFieldStyles}
-          >
-            <MenuItem value={"3 Days"}>3 Days</MenuItem>
-            <MenuItem value={"5 Days"}>5 Days</MenuItem>
-            <MenuItem value={"1 Week"}>1 Week</MenuItem>
-            <MenuItem value={"2 Weeks"}>2 Weeks</MenuItem>
-            <MenuItem value={"1 Month"}>1 Month</MenuItem>
-          </TextField>
-
-          {/* Accident Data */}
-          <Typography variant="h5" sx={{ mt: 2, color: "#fff" }}>
-            Accident Data
-          </Typography>
-          <TextField
-            label="Was the car involved in an accident?"
-            name="accidentHistory"
-            select
-            value={formData.accidentHistory}
-            onChange={handleChange}
-            required
-            sx={textFieldStyles}
-          >
-            <MenuItem value="yes">Yes</MenuItem>
-            <MenuItem value="no">No</MenuItem>
-          </TextField>
-
-          {/* Conditionally Render Additional Fields */}
-          {formData.accidentHistory === "yes" && (
-            <>
+          {/* STEP 1: Personal Info */}
+          {step === 1 && (
+            <Box>
+              <Typography variant="h5" sx={{ mb: 2, color: "#fff" }}>
+                Personal Information
+              </Typography>
               <TextField
-                label="Damage Severity"
-                name="damageSeverity"
-                value={formData.damageSeverity}
+                label="Your Name"
+                name="name"
+                value={formData.name}
                 onChange={handleChange}
-                sx={textFieldStyles}
+                required
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
               />
               <TextField
-                label="Point of Impact"
-                name="pointOfImpact"
-                value={formData.pointOfImpact}
+                label="Address"
+                name="address"
+                value={formData.address}
                 onChange={handleChange}
-                sx={textFieldStyles}
+                required
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
               />
               <TextField
-                label="Records of Damage Repair"
-                name="repairRecords"
-                select
-                value={formData.repairRecords}
+                label="Phone Number"
+                name="phone"
+                type="number"
+                inputProps={{ maxLength: 10 }}
+                value={formData.phone}
                 onChange={handleChange}
-                sx={textFieldStyles}
-              >
-                <MenuItem value="yes">Yes</MenuItem>
-                <MenuItem value="no">No</MenuItem>
-              </TextField>
-              <TextField
-                label="Airbag Deployment"
-                name="airbagDeployment"
-                select
-                value={formData.airbagDeployment}
-                onChange={handleChange}
-                sx={textFieldStyles}
-              >
-                <MenuItem value="yes">Yes</MenuItem>
-                <MenuItem value="no">No</MenuItem>
-              </TextField>
-              <TextField
-                label="Structural Damage"
-                name="structuralDamage"
-                select
-                value={formData.structuralDamage}
-                onChange={handleChange}
-                sx={textFieldStyles}
-              >
-                <MenuItem value="yes">Yes</MenuItem>
-                <MenuItem value="no">No</MenuItem>
-              </TextField>
-            </>
+                required
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
+              />
+
+              <Box display="flex" justifyContent="flex-end" mt={3}>
+                <Button
+                  variant="contained"
+                  onClick={handleNext}
+                  sx={{ backgroundColor: "#1976d2", color: "#fff" }}
+                >
+                  Next
+                </Button>
+              </Box>
+            </Box>
           )}
 
-          {/* Service History */}
-          <Typography variant="h5" sx={{ mt: 2, color: "#fff" }}>
-            Service History
-          </Typography>
-          <TextField
-            label="Oil Changes"
-            name="oilChanges"
-            select
-            value={formData.oilChanges}
-            onChange={handleChange}
-            sx={textFieldStyles}
-          >
-            <MenuItem value="yes">Yes</MenuItem>
-            <MenuItem value="no">No</MenuItem>
-          </TextField>
-          <TextField
-            label="Tire Rotations"
-            name="tireRotations"
-            select
-            value={formData.tireRotations}
-            onChange={handleChange}
-            sx={textFieldStyles}
-          >
-            <MenuItem value="yes">Yes</MenuItem>
-            <MenuItem value="no">No</MenuItem>
-          </TextField>
-          <TextField
-            label="Open Recalls"
-            name="openRecalls"
-            select
-            value={formData.openRecalls}
-            onChange={handleChange}
-            sx={textFieldStyles}
-          >
-            <MenuItem value="yes">Yes</MenuItem>
-            <MenuItem value="no">No</MenuItem>
-          </TextField>
-          <TextField
-            label="Brake Rotor Replaced"
-            name="brakeRotorReplaced"
-            select
-            value={formData.brakeRotorReplaced}
-            onChange={handleChange}
-            sx={textFieldStyles}
-          >
-            <MenuItem value="yes">Yes</MenuItem>
-            <MenuItem value="no">No</MenuItem>
-          </TextField>
-          <TextField
-            label="Transmission Replaced"
-            name="transmissionReplaced"
-            select
-            value={formData.transmissionReplaced}
-            onChange={handleChange}
-            sx={textFieldStyles}
-          >
-            <MenuItem value="yes">Yes</MenuItem>
-            <MenuItem value="no">No</MenuItem>
-          </TextField>
-          <TextField
-            label="Safety Inspections Passed"
-            name="safetyInspections"
-            select
-            value={formData.safetyInspections}
-            onChange={handleChange}
-            sx={textFieldStyles}
-          >
-            <MenuItem value="yes">Yes</MenuItem>
-            <MenuItem value="no">No</MenuItem>
-          </TextField>
+          {/* STEP 2: Car Details */}
+          {step === 2 && (
+            <Box>
+              <Typography variant="h5" sx={{ mb: 2, color: "#fff" }}>
+                Car Details / Auction Details
+              </Typography>
+              <TextField
+                label="VIN"
+                name="vin"
+                value={formData.vin}
+                onChange={handleChange}
+                required
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
+              />
+              <TextField
+                label="Make"
+                name="make"
+                select
+                value={formData.make}
+                onChange={handleChange}
+                required
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
+              >
+                {["Acura","Alfa Romeo","Audi","BMW","Buick","Cadillac","Chevrolet","Chrysler","Dodge","Fiat","Ford","GMC","Genesis","Honda","Hyundai","Infiniti","Jaguar","Jeep","Kia","Land Rover","Lexus","Lincoln","Mazda","Mercedes-Benz","Mini","Mitsubishi","Nissan","Porsche","Ram","Subaru","Tesla","Toyota","Volkswagen","Volvo","Other"].map((make) => (
+                  <MenuItem key={make} value={make}>{make}</MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                label="Model"
+                name="model"
+                value={formData.model}
+                onChange={handleChange}
+                required
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
+              />
+              <TextField
+                label="Year"
+                name="year"
+                value={formData.year}
+                type="number"
+                onChange={handleChange}
+                required
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
+              />
+              <TextField
+                label="Color"
+                name="color"
+                value={formData.color}
+                onChange={handleChange}
+                required
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
+              />
+              <TextField
+                label="Type"
+                name="type"
+                select
+                value={formData.type}
+                onChange={handleChange}
+                required
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
+              >
+                {["SUV","Sedan","Coupe","Sports Car","Convertible","Hybrid","Electric Car","Hatchback","Minivan","Pickup Truck","Other"].map((type) => (
+                  <MenuItem key={type} value={type}>{type}</MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                label="Description"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                required
+                multiline
+                rows={4}
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
+              />
 
-          {/* Ownership History */}
-          <Typography variant="h5" sx={{ mt: 2, color: "#fff" }}>
-            Ownership History
-          </Typography>
-          <TextField
-            label="Previous Owners"
-            name="previousOwners"
-            value={formData.previousOwners}
-            onChange={handleChange}
-            sx={textFieldStyles}
-          />
-          <TextField
-            label="States/Provinces Owned"
-            name="ownershipStates"
-            value={formData.ownershipStates}
-            onChange={handleChange}
-            sx={textFieldStyles}
-          />
-          <TextField
-            label="Length of Ownership (Years)"
-            name="ownershipLength"
-            value={formData.ownershipLength}
-            onChange={handleChange}
-            sx={textFieldStyles}
-          />
-          <TextField
-            label="Current Odometer Reading"
-            name="currentOdometerReading"
-            value={formData.currentOdometerReading}
-            onChange={handleChange}
-            sx={textFieldStyles}
-          />
-          <TextField
-            label="Flood or Lemon Title"
-            name="floodOrLemonTitle"
-            select
-            value={formData.floodOrLemonTitle}
-            onChange={handleChange}
-            sx={textFieldStyles}
-          >
-            <MenuItem value="yes">Yes</MenuItem>
-            <MenuItem value="no">No</MenuItem>
-          </TextField>
+              <Typography variant="h6" sx={{ mt: 2, color: "#fff" }}>
+                Auction Details
+              </Typography>
+              <TextField
+                label="Minimum Bid"
+                name="minBid"
+                value={formData.minBid}
+                onChange={handleChange}
+                required
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
+              />
+              <TextField
+                label="Buy Now Price"
+                name="price"
+                value={formData.price}
+                onChange={handleChange}
+                required
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
+              />
+              <TextField
+                label="End Time"
+                name="endTime"
+                select
+                value={formData.endTime}
+                onChange={handleChange}
+                required
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
+              >
+                {["3 Days","5 Days","1 Week","2 Weeks","1 Month"].map((time) => (
+                  <MenuItem key={time} value={time}>{time}</MenuItem>
+                ))}
+              </TextField>
 
-          {/* Upload Images */}
-          {/* Upload Images */}
-{/* Upload Images */}
-{/* Upload Images */}
-<main className="flex min-h-screen flex-col items-center justify-between p-24">
-  <UploadButton
-    endpoint="imageUploader"
-    onClientUploadComplete={(res) => {
-      // Ensure we have a persistent array for uploaded keys
-      if (!window.uploadedKeys) {
-        window.uploadedKeys = [];
-      }
+              <Box display="flex" justifyContent="space-between" mt={3}>
+                <Button
+                  variant="outlined"
+                  onClick={handleBack}
+                  sx={{ color: "#fff", borderColor: "#fff" }}
+                >
+                  Back
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleNext}
+                  sx={{ backgroundColor: "#1976d2", color: "#fff" }}
+                >
+                  Next
+                </Button>
+              </Box>
+            </Box>
+          )}
 
-      // Append new keys to the existing array
-      res.forEach(({ key }) => {
-        if (!window.uploadedKeys.includes(key)) {
-          window.uploadedKeys.push(key);
-        }
-      });
+          {/* STEP 3: Accident Data */}
+          {step === 3 && (
+            <Box>
+              <Typography variant="h5" sx={{ mb: 2, color: "#fff" }}>
+                Accident Data
+              </Typography>
+              <TextField
+                label="Was the car involved in an accident?"
+                name="accidentHistory"
+                select
+                value={formData.accidentHistory}
+                onChange={handleChange}
+                required
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
+              >
+                <MenuItem value="yes">Yes</MenuItem>
+                <MenuItem value="no">No</MenuItem>
+              </TextField>
 
-      console.log("Files uploaded successfully: ", res);
-      console.log("Updated uploaded keys:", window.uploadedKeys);
+              {formData.accidentHistory === "yes" && (
+                <>
+                  <TextField
+                    label="Damage Severity"
+                    name="damageSeverity"
+                    value={formData.damageSeverity}
+                    onChange={handleChange}
+                    fullWidth
+                    sx={{...textFieldStyles, mb:2}}
+                  />
+                  <TextField
+                    label="Point of Impact"
+                    name="pointOfImpact"
+                    value={formData.pointOfImpact}
+                    onChange={handleChange}
+                    fullWidth
+                    sx={{...textFieldStyles, mb:2}}
+                  />
+                  <TextField
+                    label="Records of Damage Repair"
+                    name="repairRecords"
+                    select
+                    value={formData.repairRecords}
+                    onChange={handleChange}
+                    fullWidth
+                    sx={{...textFieldStyles, mb:2}}
+                  >
+                    <MenuItem value="yes">Yes</MenuItem>
+                    <MenuItem value="no">No</MenuItem>
+                  </TextField>
+                  <TextField
+                    label="Airbag Deployment"
+                    name="airbagDeployment"
+                    select
+                    value={formData.airbagDeployment}
+                    onChange={handleChange}
+                    fullWidth
+                    sx={{...textFieldStyles, mb:2}}
+                  >
+                    <MenuItem value="yes">Yes</MenuItem>
+                    <MenuItem value="no">No</MenuItem>
+                  </TextField>
+                  <TextField
+                    label="Structural Damage"
+                    name="structuralDamage"
+                    select
+                    value={formData.structuralDamage}
+                    onChange={handleChange}
+                    fullWidth
+                    sx={{...textFieldStyles, mb:2}}
+                  >
+                    <MenuItem value="yes">Yes</MenuItem>
+                    <MenuItem value="no">No</MenuItem>
+                  </TextField>
+                </>
+              )}
 
-      // Target the main container
-      const uploadContainer = document.querySelector("main");
+              <Box display="flex" justifyContent="space-between" mt={3}>
+                <Button
+                  variant="outlined"
+                  onClick={handleBack}
+                  sx={{ color: "#fff", borderColor: "#fff" }}
+                >
+                  Back
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleNext}
+                  sx={{ backgroundColor: "#1976d2", color: "#fff" }}
+                >
+                  Next
+                </Button>
+              </Box>
+            </Box>
+          )}
 
-      // Create a container for the acknowledgment and list of uploaded files
-      let messageContainer = document.querySelector("#message-container");
+          {/* STEP 4: Service History */}
+          {step === 4 && (
+            <Box>
+              <Typography variant="h5" sx={{ mb: 2, color: "#fff" }}>
+                Service History (Short-Term)
+              </Typography>
+              {[
+                { label: "Oil & Filter", name: "oilChanges" },
+                { label: "Tire Rotation", name: "tireRotations" },
+                { label: "Coolant", name: "coolant" },
+                { label: "Air Filter", name: "airFilter" },
+                { label: "Tire Pressure/Tire Depth", name: "tirePressureDepth" },
+                { label: "Lights (Headlights, Turn Signals, Brake, Parking)", name: "lights" },
+              ].map((item) => (
+                <TextField
+                  key={item.name}
+                  label={item.label}
+                  name={item.name}
+                  select
+                  value={formData[item.name]}
+                  onChange={handleChange}
+                  required
+                  fullWidth
+                  sx={{...textFieldStyles, mb:2}}
+                >
+                  <MenuItem value="yes">Yes</MenuItem>
+                  <MenuItem value="no">No</MenuItem>
+                </TextField>
+              ))}
 
-      if (!messageContainer) {
-        messageContainer = document.createElement("div");
-        messageContainer.id = "message-container";
-        messageContainer.className = "flex flex-col items-center mt-4 w-full";
-        uploadContainer.appendChild(messageContainer);
+              <Typography variant="h5" sx={{ mb: 2, mt: 4, color: "#fff" }}>
+                Service History (Long-Term)
+              </Typography>
+              {[
+                { label: "Transmission", name: "transmissionReplaced" },
+                { label: "Transfer Case Fluid", name: "transferCaseFluid" },
+                { label: "Inspect Shocks and Struts", name: "shocksStruts" },
+                { label: "Coolant Fluid Exchange", name: "coolantFluidExchange" },
+                { label: "Spark Plugs", name: "sparkPlugs" },
+                { label: "Serpentine Belt", name: "serpentineBelt" },
+                { label: "Front/Rear Differential", name: "differential" },
+              ].map((item) => (
+                <TextField
+                  key={item.name}
+                  label={item.label}
+                  name={item.name}
+                  select
+                  value={formData[item.name]}
+                  onChange={handleChange}
+                  required
+                  fullWidth
+                  sx={{...textFieldStyles, mb:2}}
+                >
+                  <MenuItem value="yes">Yes</MenuItem>
+                  <MenuItem value="no">No</MenuItem>
+                </TextField>
+              ))}
 
-        // Add acknowledgment text
-        const acknowledgment = document.createElement("div");
-        acknowledgment.className = "flex items-center mb-4";
-        acknowledgment.innerHTML = `
-          <span class="text-green-500 text-xl font-bold">✔</span>
-          <span class="ml-2 text-green-500 font-medium">Images Received!</span>
-        `;
-        messageContainer.appendChild(acknowledgment);
-      }
+              <Box display="flex" justifyContent="space-between" mt={3}>
+                <Button
+                  variant="outlined"
+                  onClick={handleBack}
+                  sx={{ color: "#fff", borderColor: "#fff" }}
+                >
+                  Back
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleNext}
+                  sx={{ backgroundColor: "#1976d2", color: "#fff" }}
+                >
+                  Next
+                </Button>
+              </Box>
+            </Box>
+          )}
 
-      // Add or update the list of uploaded files
-      const fileList = messageContainer.querySelector("#file-list") || document.createElement("div");
-      fileList.id = "file-list";
-      fileList.className = "flex flex-col items-start w-full";
+          {/* STEP 5: Ownership History */}
+          {step === 5 && (
+            <Box>
+              <Typography variant="h5" sx={{ mb: 2, color: "#fff" }}>
+                Ownership History
+              </Typography>
+              <TextField
+                label="Previous Owners"
+                name="previousOwners"
+                value={formData.previousOwners}
+                onChange={handleChange}
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
+              />
+              <TextField
+                label="States/Provinces Owned"
+                name="ownershipStates"
+                value={formData.ownershipStates}
+                onChange={handleChange}
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
+              />
+              <TextField
+                label="Length of Ownership (Years)"
+                name="ownershipLength"
+                value={formData.ownershipLength}
+                onChange={handleChange}
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
+              />
+              <TextField
+                label="Current Odometer Reading"
+                name="currentOdometerReading"
+                value={formData.currentOdometerReading}
+                onChange={handleChange}
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
+              />
+              <TextField
+                label="Flood or Lemon Title"
+                name="floodOrLemonTitle"
+                select
+                value={formData.floodOrLemonTitle}
+                onChange={handleChange}
+                required
+                fullWidth
+                sx={{...textFieldStyles, mb:2}}
+              >
+                <MenuItem value="yes">Yes</MenuItem>
+                <MenuItem value="no">No</MenuItem>
+              </TextField>
 
-      res.forEach(({ key, name }) => {
-        if (!fileList.querySelector(`#file-entry-${key}`)) {
-          const imageUrl = `https://utfs.io/f/${key}`;
-          const fileEntry = document.createElement("div");
-          fileEntry.id = `file-entry-${key}`;
-          fileEntry.className =
-            "flex items-center mb-4 w-full space-y-4 border-t pt-4"; // Added spacing and border-top
+              <Box display="flex" justifyContent="space-between" mt={3}>
+                <Button
+                  variant="outlined"
+                  onClick={handleBack}
+                  sx={{ color: "#fff", borderColor: "#fff" }}
+                >
+                  Back
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleNext}
+                  sx={{ backgroundColor: "#1976d2", color: "#fff" }}
+                >
+                  Next
+                </Button>
+              </Box>
+            </Box>
+          )}
 
-          fileEntry.innerHTML = `
-            <img src="${imageUrl}" alt="${name}" class="w-10 h-10 rounded-md mr-4 border border-gray-300" />
-            <span class="text-gray-600 font-medium flex-grow" id="file-name-${key}">File Name: ${name}</span>
-            <button 
-              id="delete-btn-${key}" 
-              class="bg-gray-300 text-gray-600 px-4 py-2 rounded-md hover:bg-red-500 hover:text-white font-medium transition-colors"
-            >
-              Delete
-            </button>
-          `;
+          {/* STEP 6: Upload Images & Submit */}
+          {step === 6 && (
+            <Box>
+              <Typography variant="h5" sx={{ mb: 2, color: "#fff" }}>
+                Upload Images
+              </Typography>
+              <main className="flex min-h-screen flex-col items-center justify-between p-24">
+                <UploadButton
+                  endpoint="imageUploader"
+                  onClientUploadComplete={(res) => {
+                    if (!window.uploadedKeys) {
+                      window.uploadedKeys = [];
+                    }
+                    res.forEach(({ key }) => {
+                      if (!window.uploadedKeys.includes(key)) {
+                        window.uploadedKeys.push(key);
+                      }
+                    });
 
-          fileList.appendChild(fileEntry);
+                    console.log("Files uploaded successfully: ", res);
+                    console.log("Updated uploaded keys:", window.uploadedKeys);
 
-          // Add delete functionality
-          const deleteButton = fileEntry.querySelector(`#delete-btn-${key}`);
-          const fileNameSpan = fileEntry.querySelector(`#file-name-${key}`);
-          deleteButton.addEventListener("click", () => {
-            // Remove key from the array
-            window.uploadedKeys = window.uploadedKeys.filter(
-              (uploadedKey) => uploadedKey !== key
-            );
+                    const uploadContainer = document.querySelector("main");
+                    let messageContainer = document.querySelector("#message-container");
 
-            console.log(`File deleted: ${name}`);
-            console.log("Updated uploaded keys:", window.uploadedKeys);
+                    if (!messageContainer) {
+                      messageContainer = document.createElement("div");
+                      messageContainer.id = "message-container";
+                      messageContainer.className = "flex flex-col items-center mt-4 w-full";
+                      uploadContainer.appendChild(messageContainer);
 
-            // Strike through the file name
-            fileNameSpan.style.textDecoration = "line-through";
-            fileNameSpan.style.color = "gray";
+                      const acknowledgment = document.createElement("div");
+                      acknowledgment.className = "flex items-center mb-4";
+                      acknowledgment.innerHTML = `
+                        <span class="text-green-500 text-xl font-bold">✔</span>
+                        <span class="ml-2 text-green-500 font-medium">Images Received!</span>
+                      `;
+                      messageContainer.appendChild(acknowledgment);
+                    }
 
-            // Optionally, you can remove the entire entry after deletion
-            // fileEntry.remove();
-          });
-        }
-      });
+                    const fileList = messageContainer.querySelector("#file-list") || document.createElement("div");
+                    fileList.id = "file-list";
+                    fileList.className = "flex flex-col items-start w-full";
 
-      // Append the file list if it’s not already added
-      if (!messageContainer.contains(fileList)) {
-        messageContainer.appendChild(fileList);
-      }
-    }}
-    onUploadError={(error) => {
-      // Handle the upload error
-      console.error(`ERROR! ${error.message}`);
-    }}
-  />
-</main>
+                    res.forEach(({ key, name }) => {
+                      if (!fileList.querySelector(`#file-entry-${key}`)) {
+                        const imageUrl = `https://utfs.io/f/${key}`;
+                        const fileEntry = document.createElement("div");
+                        fileEntry.id = `file-entry-${key}`;
+                        fileEntry.className = "flex items-center mb-4 w-full space-y-4 border-t pt-4";
 
+                        fileEntry.innerHTML = `
+                          <img src="${imageUrl}" alt="${name}" class="w-10 h-10 rounded-md mr-4 border border-gray-300" />
+                          <span class="text-gray-600 font-medium flex-grow" id="file-name-${key}">File Name: ${name}</span>
+                          <button 
+                            id="delete-btn-${key}" 
+                            class="bg-gray-300 text-gray-600 px-4 py-2 rounded-md hover:bg-red-500 hover:text-white font-medium transition-colors"
+                          >
+                            Delete
+                          </button>
+                        `;
 
+                        fileList.appendChild(fileEntry);
 
+                        const deleteButton = fileEntry.querySelector(`#delete-btn-${key}`);
+                        const fileNameSpan = fileEntry.querySelector(`#file-name-${key}`);
+                        deleteButton.addEventListener("click", () => {
+                          window.uploadedKeys = window.uploadedKeys.filter(
+                            (uploadedKey) => uploadedKey !== key
+                          );
+                          console.log(`File deleted: ${name}`);
+                          console.log("Updated uploaded keys:", window.uploadedKeys);
+                          fileNameSpan.style.textDecoration = "line-through";
+                          fileNameSpan.style.color = "gray";
+                        });
+                      }
+                    });
 
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={loading}
-            sx={{
-              backgroundColor: "#1976d2",
-              color: "#fff",
-              "&:disabled": { backgroundColor: "#5a5a5a" },
-            }}
-          >
-            {loading ? "Submitting..." : "Submit Car for Auction"}
-          </Button>
+                    if (!messageContainer.contains(fileList)) {
+                      messageContainer.appendChild(fileList);
+                    }
+                  }}
+                  onUploadError={(error) => {
+                    console.error(`ERROR! ${error.message}`);
+                  }}
+                />
+              </main>
+
+              <Box display="flex" justifyContent="space-between" mt={3}>
+                <Button
+                  variant="outlined"
+                  onClick={handleBack}
+                  sx={{ color: "#fff", borderColor: "#fff" }}
+                >
+                  Back
+                </Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={loading}
+                  sx={{
+                    backgroundColor: "#1976d2",
+                    color: "#fff",
+                    "&:disabled": { backgroundColor: "#5a5a5a" },
+                  }}
+                >
+                  {loading ? "Submitting..." : "Submit Car for Auction"}
+                </Button>
+              </Box>
+            </Box>
+          )}
         </Box>
       </Container>
     </Box>
