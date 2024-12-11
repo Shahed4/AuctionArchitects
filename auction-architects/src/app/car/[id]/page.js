@@ -93,21 +93,20 @@ export default function CheckoutPage() {
         alert("Listing Has Closed");
         return;
     }
-
+  
     if (!user) {
         alert("Login to Bid.");
         return;
     }
-
+  
     const bidDifference = car.price - car.currBid;
-
-    // Adjusted Validation
     let increment = bidDifference > 1000 ? 500 : 100;
+  
     if (bidAmount < car.currBid + increment || bidAmount % increment !== 0) {
         alert(`Must place a bid of at least $${increment} more than the current bid, in increments of $${increment}.`);
         return;
     }
-
+  
     // Proceed with bid submission
     try {
         const response = await fetch(`/api/cars/${id}/bid`, {
@@ -119,24 +118,60 @@ export default function CheckoutPage() {
                 amount: bidAmount,
             }),
         });
-
+  
         const data = await response.json();
-
+  
         if (!response.ok) {
             alert(data.error || "Failed to place bid.");
             return;
         }
-
+  
         // Update car data locally after a successful bid
         setCar(data);
         alert("Bid placed successfully!");
+  
+        // After a successful bid, send an email invoice
+        // Hardcoding the recipient email as requested:
+        const invoiceSubject = `Invoice for your new bid on ${car.year} ${car.make} ${car.model}`;
+        const invoiceBody = `
+  <html>
+    <body>
+      <p>Hello!<br><br>
+      Thank you for placing a bid of $${bidAmount} on the ${car.year} ${car.make} ${car.model}. Please rate your seller and we'll keep you updated if you win the bid!<br><br>
+      Best regards,<br>
+      <img src="https://utfs.io/f/z7jUGIcSO2eq4aiykGFs3MIfUn8F9OAWiDPkZTVJzHl2mYqX" width="16" height="16" style="vertical-align:middle; margin-right:5px;">
+      AuctionArchitects
+      </p>
+    </body>
+  </html>
+`;
+
+  
+        try {
+          const emailResponse = await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: 'alexab6104@gmail.com',
+              subject: invoiceSubject,
+              body: invoiceBody,
+            }),
+          });
+  
+          if (!emailResponse.ok) {
+            console.error('Failed to send email invoice.');
+          } else {
+            console.log('Email invoice sent successfully!');
+          }
+        } catch (emailError) {
+          console.error('Error sending invoice email:', emailError);
+        }
+  
     } catch (error) {
         console.error("Error placing bid:", error);
         alert("An error occurred while placing the bid.");
     }
-};
-
-  
+  };  
   
 
   if (loading) {
