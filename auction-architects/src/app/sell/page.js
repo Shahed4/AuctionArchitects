@@ -1,9 +1,12 @@
 "use client";
 import "@uploadthing/react/styles.css";
 import { UploadButton } from "@uploadthing/react";
-import NavBar from "../components/NavBar"; 
+import NavBar from "../components/NavBar";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
+import { useUser } from "@auth0/nextjs-auth0/client";
+import { useEffect } from "react";
+
 import {
   Box,
   Container,
@@ -17,7 +20,14 @@ import {
 } from "@mui/material";
 
 export default function Sell() {
+  const { user, error, isLoading } = useUser();
   const router = useRouter();
+
+  if (isLoading) return <div>Loading...</div>;
+  if (!isLoading && !user) {
+    router.push("/api/auth/login");
+  }
+  if (!user) return null;
 
   const [formData, setFormData] = useState({
     // Personal Info
@@ -76,7 +86,7 @@ export default function Sell() {
     "Accident Data",
     "Service History",
     "Ownership History",
-    "Upload Images"
+    "Upload Images",
   ];
 
   const textFieldStyles = {
@@ -100,9 +110,9 @@ export default function Sell() {
       backgroundColor: "#000",
       color: "#fff",
       "&:hover": {
-        backgroundColor: "#333"
-      }
-    }
+        backgroundColor: "#333",
+      },
+    },
   };
 
   const handleChange = (e) => {
@@ -131,8 +141,20 @@ export default function Sell() {
         }
         break;
       case 2: // Car Details
-        ["vin","make","model","year","color","type","description","minBid","price","endTime"].forEach(field => {
-          if (!data[field]) missingFields.push(field.charAt(0).toUpperCase() + field.slice(1));
+        [
+          "vin",
+          "make",
+          "model",
+          "year",
+          "color",
+          "type",
+          "description",
+          "minBid",
+          "price",
+          "endTime",
+        ].forEach((field) => {
+          if (!data[field])
+            missingFields.push(field.charAt(0).toUpperCase() + field.slice(1));
         });
         break;
       case 3: // Accident Data
@@ -141,19 +163,43 @@ export default function Sell() {
         } else {
           // If accidentHistory is yes, more fields required
           if (data.accidentHistory === "yes") {
-            ["damageSeverity","pointOfImpact","repairRecords","airbagDeployment","structuralDamage"].forEach(field => {
-              if (!data[field]) missingFields.push(field.charAt(0).toUpperCase() + field.slice(1));
+            [
+              "damageSeverity",
+              "pointOfImpact",
+              "repairRecords",
+              "airbagDeployment",
+              "structuralDamage",
+            ].forEach((field) => {
+              if (!data[field])
+                missingFields.push(
+                  field.charAt(0).toUpperCase() + field.slice(1)
+                );
             });
           }
         }
         break;
       case 4: // Service History
         // Short-term
-        ["oilChanges","tireRotations","coolant","airFilter","tirePressureDepth","lights"].forEach(field => {
+        [
+          "oilChanges",
+          "tireRotations",
+          "coolant",
+          "airFilter",
+          "tirePressureDepth",
+          "lights",
+        ].forEach((field) => {
           if (!data[field]) missingFields.push(field);
         });
         // Long-term
-        ["transmissionReplaced","transferCaseFluid","shocksStruts","coolantFluidExchange","sparkPlugs","serpentineBelt","differential"].forEach(field => {
+        [
+          "transmissionReplaced",
+          "transferCaseFluid",
+          "shocksStruts",
+          "coolantFluidExchange",
+          "sparkPlugs",
+          "serpentineBelt",
+          "differential",
+        ].forEach((field) => {
           if (!data[field]) missingFields.push(field);
         });
         break;
@@ -163,7 +209,7 @@ export default function Sell() {
         if (!data.floodOrLemonTitle) missingFields.push("Flood or Lemon Title");
         break;
       case 6: // Upload Images
-        // No direct required fields, but must be done before submit. 
+        // No direct required fields, but must be done before submit.
         // Typically images might not be strictly required unless you define so.
         // If needed, add logic for required images here.
         break;
@@ -171,16 +217,20 @@ export default function Sell() {
         break;
     }
 
-    return { 
-      valid: missingFields.length === 0, 
-      missingFields 
+    return {
+      valid: missingFields.length === 0,
+      missingFields,
     };
   };
 
   const handleNext = () => {
-    const {valid, missingFields} = validateStep(step, formData);
+    const { valid, missingFields } = validateStep(step, formData);
     if (!valid) {
-      alert(`Please complete the following fields before continuing:\n- ${missingFields.join("\n- ")}`);
+      alert(
+        `Please complete the following fields before continuing:\n- ${missingFields.join(
+          "\n- "
+        )}`
+      );
       return;
     }
 
@@ -199,24 +249,39 @@ export default function Sell() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     // Validate the final step before submitting
-    const {valid, missingFields} = validateStep(step, formData);
+    const { valid, missingFields } = validateStep(step, formData);
     if (!valid) {
-      alert(`Please complete the following fields before submitting:\n- ${missingFields.join("\n- ")}`);
+      alert(
+        `Please complete the following fields before submitting:\n- ${missingFields.join(
+          "\n- "
+        )}`
+      );
       return;
     }
 
     // Check if all steps are completed
     const allCompleted = completedSteps.every((completed, idx) => {
       // For the last step, we just validated above, so we can consider it completed now.
-      return idx === (step - 1) ? true : completed;
+      return idx === step - 1 ? true : completed;
     });
 
     if (!allCompleted) {
-      const incompleteSteps = steps.filter((_, i) => !completedSteps[i] && i !== (step-1));
+      const incompleteSteps = steps.filter(
+        (_, i) => !completedSteps[i] && i !== step - 1
+      );
       if (incompleteSteps.length > 0) {
-        alert(`The following sections are incomplete:\n- ${incompleteSteps.join("\n- ")}`);
+        alert(
+          `The following sections are incomplete:\n- ${incompleteSteps.join(
+            "\n- "
+          )}`
+        );
         return;
       }
+    }
+
+    if (!user) {
+      alert("Must be signed in to create listing.");
+      return;
     }
 
     setLoading(true);
@@ -228,7 +293,10 @@ export default function Sell() {
       const response = await fetch("/api/cars", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedFormData),
+        body: JSON.stringify({
+          user,
+          formData: updatedFormData,
+        }),
       });
 
       if (response.ok) {
@@ -257,7 +325,12 @@ export default function Sell() {
       <Container maxWidth="md">
         <Typography
           variant="h3"
-          sx={{ mb: 4, fontWeight: "bold", color: "#e0e0e0", textAlign: "center" }}
+          sx={{
+            mb: 4,
+            fontWeight: "bold",
+            color: "#e0e0e0",
+            textAlign: "center",
+          }}
         >
           Sell Your Car
         </Typography>
@@ -268,22 +341,22 @@ export default function Sell() {
             activeStep={step - 1}
             alternativeLabel
             sx={{
-              '& .MuiStepLabel-label': {
-                color: '#fff',
+              "& .MuiStepLabel-label": {
+                color: "#fff",
               },
-              '& .MuiStepLabel-label.Mui-active': {
-                color: '#1976d2',
-                fontWeight: 'bold'
+              "& .MuiStepLabel-label.Mui-active": {
+                color: "#1976d2",
+                fontWeight: "bold",
               },
-              '& .MuiStepIcon-root.Mui-active': {
-                color: '#1976d2'
+              "& .MuiStepIcon-root.Mui-active": {
+                color: "#1976d2",
               },
-              '& .MuiStepIcon-root.Mui-completed': {
-                color: '#1976d2'
+              "& .MuiStepIcon-root.Mui-completed": {
+                color: "#1976d2",
               },
-              '& .MuiStepIcon-text': {
-                fill: '#fff'
-              }
+              "& .MuiStepIcon-text": {
+                fill: "#fff",
+              },
             }}
           >
             {steps.map((label, index) => (
@@ -320,7 +393,7 @@ export default function Sell() {
                 onChange={handleChange}
                 required
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               />
               <TextField
                 label="Address"
@@ -329,7 +402,7 @@ export default function Sell() {
                 onChange={handleChange}
                 required
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               />
               <TextField
                 label="Phone Number"
@@ -340,7 +413,7 @@ export default function Sell() {
                 onChange={handleChange}
                 required
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               />
 
               <Box display="flex" justifyContent="flex-end" mt={3}>
@@ -368,7 +441,7 @@ export default function Sell() {
                 onChange={handleChange}
                 required
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               />
               <TextField
                 label="Make"
@@ -378,10 +451,48 @@ export default function Sell() {
                 onChange={handleChange}
                 required
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               >
-                {["Acura","Alfa Romeo","Audi","BMW","Buick","Cadillac","Chevrolet","Chrysler","Dodge","Fiat","Ford","GMC","Genesis","Honda","Hyundai","Infiniti","Jaguar","Jeep","Kia","Land Rover","Lexus","Lincoln","Mazda","Mercedes-Benz","Mini","Mitsubishi","Nissan","Porsche","Ram","Subaru","Tesla","Toyota","Volkswagen","Volvo","Other"].map((make) => (
-                  <MenuItem key={make} value={make}>{make}</MenuItem>
+                {[
+                  "Acura",
+                  "Alfa Romeo",
+                  "Audi",
+                  "BMW",
+                  "Buick",
+                  "Cadillac",
+                  "Chevrolet",
+                  "Chrysler",
+                  "Dodge",
+                  "Fiat",
+                  "Ford",
+                  "GMC",
+                  "Genesis",
+                  "Honda",
+                  "Hyundai",
+                  "Infiniti",
+                  "Jaguar",
+                  "Jeep",
+                  "Kia",
+                  "Land Rover",
+                  "Lexus",
+                  "Lincoln",
+                  "Mazda",
+                  "Mercedes-Benz",
+                  "Mini",
+                  "Mitsubishi",
+                  "Nissan",
+                  "Porsche",
+                  "Ram",
+                  "Subaru",
+                  "Tesla",
+                  "Toyota",
+                  "Volkswagen",
+                  "Volvo",
+                  "Other",
+                ].map((make) => (
+                  <MenuItem key={make} value={make}>
+                    {make}
+                  </MenuItem>
                 ))}
               </TextField>
               <TextField
@@ -391,7 +502,7 @@ export default function Sell() {
                 onChange={handleChange}
                 required
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               />
               <TextField
                 label="Year"
@@ -401,7 +512,7 @@ export default function Sell() {
                 onChange={handleChange}
                 required
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               />
               <TextField
                 label="Color"
@@ -410,7 +521,7 @@ export default function Sell() {
                 onChange={handleChange}
                 required
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               />
               <TextField
                 label="Type"
@@ -420,10 +531,24 @@ export default function Sell() {
                 onChange={handleChange}
                 required
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               >
-                {["SUV","Sedan","Coupe","Sports Car","Convertible","Hybrid","Electric Car","Hatchback","Minivan","Pickup Truck","Other"].map((type) => (
-                  <MenuItem key={type} value={type}>{type}</MenuItem>
+                {[
+                  "SUV",
+                  "Sedan",
+                  "Coupe",
+                  "Sports Car",
+                  "Convertible",
+                  "Hybrid",
+                  "Electric Car",
+                  "Hatchback",
+                  "Minivan",
+                  "Pickup Truck",
+                  "Other",
+                ].map((type) => (
+                  <MenuItem key={type} value={type}>
+                    {type}
+                  </MenuItem>
                 ))}
               </TextField>
               <TextField
@@ -435,7 +560,7 @@ export default function Sell() {
                 multiline
                 rows={4}
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               />
 
               <Typography variant="h6" sx={{ mt: 2, color: "#fff" }}>
@@ -448,7 +573,7 @@ export default function Sell() {
                 onChange={handleChange}
                 required
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               />
               <TextField
                 label="Buy Now Price"
@@ -457,7 +582,7 @@ export default function Sell() {
                 onChange={handleChange}
                 required
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               />
               <TextField
                 label="End Time"
@@ -467,11 +592,15 @@ export default function Sell() {
                 onChange={handleChange}
                 required
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               >
-                {["3 Days","5 Days","1 Week","2 Weeks","1 Month"].map((time) => (
-                  <MenuItem key={time} value={time}>{time}</MenuItem>
-                ))}
+                {["3 Days", "5 Days", "1 Week", "2 Weeks", "1 Month"].map(
+                  (time) => (
+                    <MenuItem key={time} value={time}>
+                      {time}
+                    </MenuItem>
+                  )
+                )}
               </TextField>
 
               <Box display="flex" justifyContent="space-between" mt={3}>
@@ -507,7 +636,7 @@ export default function Sell() {
                 onChange={handleChange}
                 required
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               >
                 <MenuItem value="yes">Yes</MenuItem>
                 <MenuItem value="no">No</MenuItem>
@@ -521,7 +650,7 @@ export default function Sell() {
                     value={formData.damageSeverity}
                     onChange={handleChange}
                     fullWidth
-                    sx={{...textFieldStyles, mb:2}}
+                    sx={{ ...textFieldStyles, mb: 2 }}
                   />
                   <TextField
                     label="Point of Impact"
@@ -529,7 +658,7 @@ export default function Sell() {
                     value={formData.pointOfImpact}
                     onChange={handleChange}
                     fullWidth
-                    sx={{...textFieldStyles, mb:2}}
+                    sx={{ ...textFieldStyles, mb: 2 }}
                   />
                   <TextField
                     label="Records of Damage Repair"
@@ -538,7 +667,7 @@ export default function Sell() {
                     value={formData.repairRecords}
                     onChange={handleChange}
                     fullWidth
-                    sx={{...textFieldStyles, mb:2}}
+                    sx={{ ...textFieldStyles, mb: 2 }}
                   >
                     <MenuItem value="yes">Yes</MenuItem>
                     <MenuItem value="no">No</MenuItem>
@@ -550,7 +679,7 @@ export default function Sell() {
                     value={formData.airbagDeployment}
                     onChange={handleChange}
                     fullWidth
-                    sx={{...textFieldStyles, mb:2}}
+                    sx={{ ...textFieldStyles, mb: 2 }}
                   >
                     <MenuItem value="yes">Yes</MenuItem>
                     <MenuItem value="no">No</MenuItem>
@@ -562,7 +691,7 @@ export default function Sell() {
                     value={formData.structuralDamage}
                     onChange={handleChange}
                     fullWidth
-                    sx={{...textFieldStyles, mb:2}}
+                    sx={{ ...textFieldStyles, mb: 2 }}
                   >
                     <MenuItem value="yes">Yes</MenuItem>
                     <MenuItem value="no">No</MenuItem>
@@ -600,8 +729,14 @@ export default function Sell() {
                 { label: "Tire Rotation", name: "tireRotations" },
                 { label: "Coolant", name: "coolant" },
                 { label: "Air Filter", name: "airFilter" },
-                { label: "Tire Pressure/Tire Depth", name: "tirePressureDepth" },
-                { label: "Lights (Headlights, Turn Signals, Brake, Parking)", name: "lights" },
+                {
+                  label: "Tire Pressure/Tire Depth",
+                  name: "tirePressureDepth",
+                },
+                {
+                  label: "Lights (Headlights, Turn Signals, Brake, Parking)",
+                  name: "lights",
+                },
               ].map((item) => (
                 <TextField
                   key={item.name}
@@ -612,7 +747,7 @@ export default function Sell() {
                   onChange={handleChange}
                   required
                   fullWidth
-                  sx={{...textFieldStyles, mb:2}}
+                  sx={{ ...textFieldStyles, mb: 2 }}
                 >
                   <MenuItem value="yes">Yes</MenuItem>
                   <MenuItem value="no">No</MenuItem>
@@ -626,7 +761,10 @@ export default function Sell() {
                 { label: "Transmission", name: "transmissionReplaced" },
                 { label: "Transfer Case Fluid", name: "transferCaseFluid" },
                 { label: "Inspect Shocks and Struts", name: "shocksStruts" },
-                { label: "Coolant Fluid Exchange", name: "coolantFluidExchange" },
+                {
+                  label: "Coolant Fluid Exchange",
+                  name: "coolantFluidExchange",
+                },
                 { label: "Spark Plugs", name: "sparkPlugs" },
                 { label: "Serpentine Belt", name: "serpentineBelt" },
                 { label: "Front/Rear Differential", name: "differential" },
@@ -640,7 +778,7 @@ export default function Sell() {
                   onChange={handleChange}
                   required
                   fullWidth
-                  sx={{...textFieldStyles, mb:2}}
+                  sx={{ ...textFieldStyles, mb: 2 }}
                 >
                   <MenuItem value="yes">Yes</MenuItem>
                   <MenuItem value="no">No</MenuItem>
@@ -678,7 +816,7 @@ export default function Sell() {
                 value={formData.previousOwners}
                 onChange={handleChange}
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               />
               <TextField
                 label="States/Provinces Owned"
@@ -686,7 +824,7 @@ export default function Sell() {
                 value={formData.ownershipStates}
                 onChange={handleChange}
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               />
               <TextField
                 label="Length of Ownership (Years)"
@@ -694,7 +832,7 @@ export default function Sell() {
                 value={formData.ownershipLength}
                 onChange={handleChange}
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               />
               <TextField
                 label="Current Odometer Reading"
@@ -702,7 +840,7 @@ export default function Sell() {
                 value={formData.currentOdometerReading}
                 onChange={handleChange}
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               />
               <TextField
                 label="Flood or Lemon Title"
@@ -712,7 +850,7 @@ export default function Sell() {
                 onChange={handleChange}
                 required
                 fullWidth
-                sx={{...textFieldStyles, mb:2}}
+                sx={{ ...textFieldStyles, mb: 2 }}
               >
                 <MenuItem value="yes">Yes</MenuItem>
                 <MenuItem value="no">No</MenuItem>
@@ -760,12 +898,14 @@ export default function Sell() {
                     console.log("Updated uploaded keys:", window.uploadedKeys);
 
                     const uploadContainer = document.querySelector("main");
-                    let messageContainer = document.querySelector("#message-container");
+                    let messageContainer =
+                      document.querySelector("#message-container");
 
                     if (!messageContainer) {
                       messageContainer = document.createElement("div");
                       messageContainer.id = "message-container";
-                      messageContainer.className = "flex flex-col items-center mt-4 w-full";
+                      messageContainer.className =
+                        "flex flex-col items-center mt-4 w-full";
                       uploadContainer.appendChild(messageContainer);
 
                       const acknowledgment = document.createElement("div");
@@ -777,7 +917,9 @@ export default function Sell() {
                       messageContainer.appendChild(acknowledgment);
                     }
 
-                    const fileList = messageContainer.querySelector("#file-list") || document.createElement("div");
+                    const fileList =
+                      messageContainer.querySelector("#file-list") ||
+                      document.createElement("div");
                     fileList.id = "file-list";
                     fileList.className = "flex flex-col items-start w-full";
 
@@ -786,7 +928,8 @@ export default function Sell() {
                         const imageUrl = `https://utfs.io/f/${key}`;
                         const fileEntry = document.createElement("div");
                         fileEntry.id = `file-entry-${key}`;
-                        fileEntry.className = "flex items-center mb-4 w-full space-y-4 border-t pt-4";
+                        fileEntry.className =
+                          "flex items-center mb-4 w-full space-y-4 border-t pt-4";
 
                         fileEntry.innerHTML = `
                           <img src="${imageUrl}" alt="${name}" class="w-10 h-10 rounded-md mr-4 border border-gray-300" />
@@ -801,14 +944,21 @@ export default function Sell() {
 
                         fileList.appendChild(fileEntry);
 
-                        const deleteButton = fileEntry.querySelector(`#delete-btn-${key}`);
-                        const fileNameSpan = fileEntry.querySelector(`#file-name-${key}`);
+                        const deleteButton = fileEntry.querySelector(
+                          `#delete-btn-${key}`
+                        );
+                        const fileNameSpan = fileEntry.querySelector(
+                          `#file-name-${key}`
+                        );
                         deleteButton.addEventListener("click", () => {
                           window.uploadedKeys = window.uploadedKeys.filter(
                             (uploadedKey) => uploadedKey !== key
                           );
                           console.log(`File deleted: ${name}`);
-                          console.log("Updated uploaded keys:", window.uploadedKeys);
+                          console.log(
+                            "Updated uploaded keys:",
+                            window.uploadedKeys
+                          );
                           fileNameSpan.style.textDecoration = "line-through";
                           fileNameSpan.style.color = "gray";
                         });
