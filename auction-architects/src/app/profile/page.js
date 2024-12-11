@@ -6,76 +6,24 @@ import NavBar from "../components/NavBar";
 import {
   Box,
   Typography,
-  TextField,
   Button,
   Grid,
   Card,
   CardContent,
   CardMedia,
+  Divider,
+  Chip,
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Divider,
-  Chip,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 export default function Profile() {
   const { user, isLoading, error } = useUser();
-  const [additionalInfo, setAdditionalInfo] = useState({
-    address: "",
-    phone: "",
-  });
-  const [savedInfo, setSavedInfo] = useState(null);
-
-  useEffect(() => {
-    const fetchSavedInfo = async () => {
-      if (user) {
-        try {
-          const response = await fetch(`/api/users/${user.sub}`);
-          if (response.ok) {
-            const data = await response.json();
-            setSavedInfo(data);
-            setAdditionalInfo({
-              address: data.address || "",
-              phone: data.phone || "",
-            });
-          }
-        } catch (error) {
-          console.error("Failed to fetch additional user info:", error);
-        }
-      }
-    };
-
-    fetchSavedInfo();
-  }, [user]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setAdditionalInfo((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch(`/api/users/${user.sub}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(additionalInfo),
-      });
-
-      if (response.ok) {
-        alert("Information saved successfully!");
-      } else {
-        alert("Failed to save information.");
-      }
-    } catch (error) {
-      console.error("Error saving additional info:", error);
-    }
-  };
-
+  
+  // Removed address/phone fetch and edit fields logic since it's no longer needed.
+  
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>{error.message}</p>;
 
@@ -142,11 +90,46 @@ export default function Profile() {
               </Box>
             </CardContent>
           </Card>
+
+          {/* Reviews moved below the left column profile card */}
+          <Card sx={{ mt: 3 }}>
+            <CardContent>
+              <Typography variant="h5" sx={{ mb: 2 }}>
+                <strong>Reviews</strong>
+              </Typography>
+              <Box sx={{ mb: 2 }}>
+                <Typography>
+                  "Great experience! The seller was very responsive and the product was as described."
+                </Typography>
+                <Typography variant="caption" display="block" color="textSecondary">
+                  - Anonymous
+                </Typography>
+              </Box>
+              <Divider sx={{ my: 2 }} />
+              <Box sx={{ mb: 2 }}>
+                <Typography>
+                  "Shipping was a bit slow, but the seller kept me informed throughout the process."
+                </Typography>
+                <Typography variant="caption" display="block" color="textSecondary">
+                  - Anonymous
+                </Typography>
+              </Box>
+              <Divider sx={{ my: 2 }} />
+              <Box>
+                <Typography>
+                  "The product quality was alright, not as good as expected but still acceptable."
+                </Typography>
+                <Typography variant="caption" display="block" color="textSecondary">
+                  - Anonymous
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
         </Grid>
 
         {/* Right Column */}
         <Grid item xs={12} md={8}>
-          {/* User Info Card */}
+          {/* User Info Card (no edit fields now) */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <Typography variant="h5" sx={{ mb: 2 }}>
@@ -159,84 +142,69 @@ export default function Profile() {
                 <strong>Email:</strong> {user.email}
               </Typography>
               <Typography variant="body1">
-                <strong>Address:</strong> Long Island, NY{additionalInfo.address}
+                <strong>Address:</strong> Long Island, NY
               </Typography>
               <Typography variant="body1">
-                <strong>Phone:</strong> (111)111-1111{additionalInfo.phone}
+                <strong>Phone:</strong> (111)111-1111
               </Typography>
-              {/* Edit Form */}
-              <Box component="form" onSubmit={handleSave} sx={{ mt: 3 }}>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  Edit Additional Information
-                </Typography>
-                <TextField
-                  label="Address"
-                  name="address"
-                  value={additionalInfo.address}
-                  onChange={handleChange}
-                  fullWidth
-                  margin="normal"
-                />
-                <TextField
-                  label="Phone"
-                  name="phone"
-                  value={additionalInfo.phone}
-                  onChange={handleChange}
-                  fullWidth
-                  margin="normal"
-                />
-                <Button type="submit" variant="contained" sx={{ mt: 2 }}>
-                  Save Information
-                </Button>
-              </Box>
             </CardContent>
           </Card>
 
-          {/* Single Accordion for Reviews */}
+          {/* Balance Section */}
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h5" sx={{ mb: 2 }}>
+                <strong>Balance</strong>
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 2 }}>
+                Current Balance: $3000
+              </Typography>
+              <Button variant="contained">Add Funds</Button>
+            </CardContent>
+          </Card>
+
+          {/* Current Bids Accordion */}
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Accordion>
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
+                  aria-controls="current-bids-content"
+                  id="current-bids-header"
+                >
+                  <Typography><strong>Current Bids</strong></Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  {/* Replace with your bids data */}
+                  <Typography>
+                    You currently have no active bids.
+                  </Typography>
+                </AccordionDetails>
+              </Accordion>
+            </CardContent>
+          </Card>
+
+          {/* Current Listings Accordion */}
           <Card>
             <CardContent>
               <Accordion>
                 <AccordionSummary
                   expandIcon={<ExpandMoreIcon />}
-                  aria-controls="reviews-content"
-                  id="reviews-header"
+                  aria-controls="current-listings-content"
+                  id="current-listings-header"
                 >
-                  <Typography><strong>Reviews</strong></Typography>
+                  <Typography><strong>Current Listings</strong></Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                  <Box sx={{ mb: 2 }}>
-                    <Typography>
-                      "Great experience! The seller was very responsive and the
-                      product was as described."
-                    </Typography>
-                    <Typography variant="caption" display="block" color="textSecondary">
-                      - Anonymous
-                    </Typography>
-                  </Box>
-                  <Divider sx={{ my: 2 }} />
-                  <Box sx={{ mb: 2 }}>
-                    <Typography>
-                      "Shipping was a bit slow, but the seller kept me informed
-                      throughout the process."
-                    </Typography>
-                    <Typography variant="caption" display="block" color="textSecondary">
-                      - Anonymous
-                    </Typography>
-                  </Box>
-                  <Divider sx={{ my: 2 }} />
-                  <Box>
-                    <Typography>
-                      "The product quality was alright, not as good as expected
-                      but still acceptable."
-                    </Typography>
-                    <Typography variant="caption" display="block" color="textSecondary">
-                      - Anonymous
-                    </Typography>
-                  </Box>
+                  {/* Replace with your listings data */}
+                  <Typography>
+                    You currently have no active listings.
+                  </Typography>
                 </AccordionDetails>
               </Accordion>
             </CardContent>
           </Card>
+
         </Grid>
       </Grid>
     </Box>
