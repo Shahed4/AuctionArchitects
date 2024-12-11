@@ -40,16 +40,6 @@ export default function Profile() {
     const fetchUserInfo = async () => {
       if (!user?.sub) return; // Ensure user.sub is available before making the request
 
-      if (
-        data.firstName === "" ||
-        DataTransfer.lastName === "" ||
-        DataTransfer.generalLocation === "" ||
-        data.phoneNumber.length != 10
-      ) {
-        alert("Fill in your real information");
-        return;
-      }
-
       try {
         const response = await fetch(`/api/users/${user.sub}`, {
           method: "GET",
@@ -86,6 +76,21 @@ export default function Profile() {
   };
 
   const handleSaveChanges = async () => {
+    if (
+      editFields.firstName === "" ||
+      editFields.lastName === "" ||
+      editFields.generalLocation === "" ||
+      editFields.phoneNumber === ""
+    ) {
+      alert("Fill in all fields.");
+      return;
+    }
+
+    if (editFields.phoneNumber.length != 10) {
+      alert("Input in a real phone number");
+      return;
+    }
+
     try {
       const response = await fetch(`/api/users/${user.sub}`, {
         method: "PUT",
