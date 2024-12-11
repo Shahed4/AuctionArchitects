@@ -30,8 +30,17 @@ export async function POST(req) {
   try {
     const client = await clientPromise;
     const db = client.db("Auction");
+    const { user, formData } = await req.json();
 
-    const body = await req.json();
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: "SignIn Required To Create Listing." }),
+        { status: 400 }
+      );
+    }
+
+    const userId = user.sub;
+    console.log("USER ID: ", userId);
 
     // Validate required fields
     const requiredFields = [
@@ -48,7 +57,7 @@ export async function POST(req) {
       "description",
     ];
     for (const field of requiredFields) {
-      if (!body[field]) {
+      if (!formData[field]) {
         return new Response(
           JSON.stringify({ error: `Missing required field: ${field}` }),
           { status: 400 }
@@ -56,7 +65,7 @@ export async function POST(req) {
       }
     }
 
-    if (body.year < 1900 || body.year > new Date().getFullYear()) {
+    if (formData.year < 1900 || formData.year > new Date().getFullYear()) {
       return new Response(
         JSON.stringify({ error: "Invalid year. Please provide a valid year." }),
         { status: 400 }
@@ -64,57 +73,64 @@ export async function POST(req) {
     }
 
     const newCar = {
-      // Personal/Basic Info
-      name: body.name,
-      address: body.address,
-      phone: body.phone,
-      vin: body.vin || null,
-      make: body.make,
-      model: body.model,
-      year: body.year,
-      color: body.color,
-      type: body.type,
-      price: parseFloat(body.price),
-      minBid: parseFloat(body.minBid),
-      endTime: endTime(body.endTime),
-      currBid: parseFloat(body.minBid),
+      // IDs
+      sellerId: userId,
       bidderId: null,
+
+      // Seller Info
+      name: formData.name,
+      address: formData.address,
+      phone: formData.phone,
+
+      // Basic Car Info
+      vin: formData.vin || null,
+      make: formData.make,
+      model: formData.model,
+      year: formData.year,
+      color: formData.color,
+      type: formData.type,
+      description: formData.description,
+      images: formData.images || [],
+
+      // Bidding Info
+      price: parseFloat(formData.price),
+      minBid: parseFloat(formData.minBid),
+      endTime: endTime(formData.endTime),
+      currBid: parseFloat(formData.minBid),
       numBids: 0,
-      description: body.description,
-      images: body.images || [],
-      
+
       // Accident Data
-      accidentHistory: body.accidentHistory || null,
-      damageSeverity: body.damageSeverity || null,
-      pointOfImpact: body.pointOfImpact || null,
-      repairRecords: body.repairRecords || null,
-      airbagDeployment: body.airbagDeployment || null,
-      structuralDamage: body.structuralDamage || null,
+      accidentHistory: formData.accidentHistory || null,
+      damageSeverity: formData.damageSeverity || null,
+      pointOfImpact: formData.pointOfImpact || null,
+      repairRecords: formData.repairRecords || null,
+      airbagDeployment: formData.airbagDeployment || null,
+      structuralDamage: formData.structuralDamage || null,
 
       // Service History (Short-Term)
-      oilChanges: body.oilChanges || null,
-      tireRotations: body.tireRotations || null,
-      coolant: body.coolant || null,
-      airFilter: body.airFilter || null,
-      tirePressureDepth: body.tirePressureDepth || null,
-      lights: body.lights || null,
+      oilChanges: formData.oilChanges || null,
+      tireRotations: formData.tireRotations || null,
+      coolant: formData.coolant || null,
+      airFilter: formData.airFilter || null,
+      tirePressureDepth: formData.tirePressureDepth || null,
+      lights: formData.lights || null,
 
       // Service History (Long-Term)
-      transmissionReplaced: body.transmissionReplaced || null,
-      transferCaseFluid: body.transferCaseFluid || null,
-      shocksStruts: body.shocksStruts || null,
-      coolantFluidExchange: body.coolantFluidExchange || null,
-      sparkPlugs: body.sparkPlugs || null,
-      serpentineBelt: body.serpentineBelt || null,
-      differential: body.differential || null,
+      transmissionReplaced: formData.transmissionReplaced || null,
+      transferCaseFluid: formData.transferCaseFluid || null,
+      shocksStruts: formData.shocksStruts || null,
+      coolantFluidExchange: formData.coolantFluidExchange || null,
+      sparkPlugs: formData.sparkPlugs || null,
+      serpentineBelt: formData.serpentineBelt || null,
+      differential: formData.differential || null,
 
       // Ownership History
-      typeOfUse: body.typeOfUse || null,
-      previousOwners: body.previousOwners || null,
-      ownershipStates: body.ownershipStates || null,
-      ownershipLength: body.ownershipLength || null,
-      currentOdometerReading: body.currentOdometerReading || null,
-      floodOrLemonTitle: body.floodOrLemonTitle || null,
+      typeOfUse: formData.typeOfUse || null,
+      previousOwners: formData.previousOwners || null,
+      ownershipStates: formData.ownershipStates || null,
+      ownershipLength: formData.ownershipLength || null,
+      currentOdometerReading: formData.currentOdometerReading || null,
+      floodOrLemonTitle: formData.floodOrLemonTitle || null,
 
       createdAt: new Date(),
       showListing: true,
