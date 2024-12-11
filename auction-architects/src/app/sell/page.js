@@ -1,7 +1,7 @@
 "use client";
 import "@uploadthing/react/styles.css";
 import { UploadButton } from "@uploadthing/react";
-
+import NavBar from "../components/NavBar"; 
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import {
@@ -149,10 +149,15 @@ export default function Sell() {
   };
 
   return (
+
     <Box
       sx={{ backgroundColor: "#000", minHeight: "100vh", color: "#fff", py: 5 }}
     >
+    <NavBar /> 
+
+
       <Container maxWidth="md">
+
         <Typography
           variant="h3"
           sx={{ mb: 4, fontWeight: "bold", color: "#e0e0e0" }}

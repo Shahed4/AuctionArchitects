@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useUser } from "@auth0/nextjs-auth0/client"; // Import Auth0 hook
+import NavBar from "./components/NavBar"; 
 
 export default function Home() {
   const router = useRouter();
@@ -80,30 +81,7 @@ export default function Home() {
       sx={{ backgroundColor: "#000", minHeight: "100vh", color: "#fff", py: 0 }}
     >
       <Container maxWidth="lg" sx={{ p: 0 }}>
-        {/* Navigation Bar */}
-        <AppBar
-          position="fixed"
-          sx={{ backgroundColor: "transparent", boxShadow: "none" }}
-        >
-          <Toolbar>
-            <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              Auction Architects
-            </Typography>
-            <Button color="inherit" onClick={() => router.push("/sell")}>
-              Sell
-            </Button>
-            {!isLoading &&
-              (user ? (
-                <Button color="inherit" href="/api/auth/logout">
-                  Logout
-                </Button>
-              ) : (
-                <Button color="inherit" href="/api/auth/login">
-                  Login
-                </Button>
-              ))}
-          </Toolbar>
-        </AppBar>
+        <NavBar />
 
         {/* Hero Section */}
         <Box

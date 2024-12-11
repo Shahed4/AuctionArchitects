@@ -3,6 +3,7 @@
 import { useUser } from "@auth0/nextjs-auth0/client";
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import NavBar from "../../components/NavBar";
 import {
   Box,
   Container,
@@ -218,6 +219,7 @@ export default function CheckoutPage() {
         py: 5,
       }}
     >
+      <NavBar />
       <Container maxWidth="lg">
         {/* Header Section */}
         <Typography
@@ -414,7 +416,7 @@ export default function CheckoutPage() {
   <Box
     sx={{
       position: "absolute",
-      top: 16,
+      top: 50,
       right: 16,
       backgroundColor: "#1a1a1a",
       color: "#fff",
