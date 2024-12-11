@@ -1,5 +1,6 @@
 import localFont from "next/font/local";
 import "./globals.css";
+import Chatbot from "./components/Chatbot"
 import { UserProvider } from "@auth0/nextjs-auth0/client";
 
 // Local fonts configuration
@@ -27,6 +28,7 @@ export default function RootLayout({ children }) {
       <UserProvider>
         <body className={`${geistSans.variable} ${geistMono.variable}`}>
           {children}
+          <Chatbot />
         </body>
       </UserProvider>
     </html>

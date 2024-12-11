@@ -44,9 +44,11 @@ export default function NavBar() {
         </Box>
 
         {/* Right-aligned buttons */}
-        <Button color="inherit" onClick={() => router.push("/sell")}>
-          Sell
-        </Button>
+        {!isLoading && user && (
+          <Button color="inherit" onClick={() => router.push("/sell")}>
+            Sell
+          </Button>
+        )}
 
         {!isLoading && user && (
           <IconButton color="inherit" onClick={() => router.push("/profile")}>
