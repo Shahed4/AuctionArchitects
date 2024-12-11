@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useUser } from "@auth0/nextjs-auth0/client";
+import NavBar from "../components/NavBar";
 import {
   Box,
   Typography,
@@ -79,8 +80,9 @@ export default function Profile() {
   if (error) return <p>{error.message}</p>;
 
   return (
-    <Box sx={{ padding: "2rem" }}>
+    <Box sx={{ padding: "2rem", marginTop: "40px" }}>
       <Grid container spacing={4}>
+        <NavBar />
         {/* Left Column */}
         <Grid item xs={12} md={4}>
           <Card sx={{ textAlign: "center", p: 2 }}>
