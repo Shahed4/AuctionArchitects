@@ -31,7 +31,6 @@ export async function POST(req) {
     const client = await clientPromise;
     const db = client.db("Auction");
 
-    // Parse and log incoming request body
     const body = await req.json();
 
     // Validate required fields
@@ -64,12 +63,12 @@ export async function POST(req) {
       );
     }
 
-    // Construct new car object
     const newCar = {
+      // Personal/Basic Info
       name: body.name,
       address: body.address,
       phone: body.phone,
-      vin: body.vin,
+      vin: body.vin || null,
       make: body.make,
       model: body.model,
       year: body.year,
@@ -82,39 +81,54 @@ export async function POST(req) {
       bidderId: null,
       numBids: 0,
       description: body.description,
-      images: body.images || [], // Add uploaded image URLs if available
+      images: body.images || [],
+      
+      // Accident Data
       accidentHistory: body.accidentHistory || null,
       damageSeverity: body.damageSeverity || null,
       pointOfImpact: body.pointOfImpact || null,
       repairRecords: body.repairRecords || null,
       airbagDeployment: body.airbagDeployment || null,
       structuralDamage: body.structuralDamage || null,
+
+      // Service History (Short-Term)
       oilChanges: body.oilChanges || null,
       tireRotations: body.tireRotations || null,
-      openRecalls: body.openRecalls || null,
-      brakeRotorReplaced: body.brakeRotorReplaced || null,
+      coolant: body.coolant || null,
+      airFilter: body.airFilter || null,
+      tirePressureDepth: body.tirePressureDepth || null,
+      lights: body.lights || null,
+
+      // Service History (Long-Term)
       transmissionReplaced: body.transmissionReplaced || null,
-      safetyInspections: body.safetyInspections || null,
+      transferCaseFluid: body.transferCaseFluid || null,
+      shocksStruts: body.shocksStruts || null,
+      coolantFluidExchange: body.coolantFluidExchange || null,
+      sparkPlugs: body.sparkPlugs || null,
+      serpentineBelt: body.serpentineBelt || null,
+      differential: body.differential || null,
+
+      // Ownership History
+      typeOfUse: body.typeOfUse || null,
       previousOwners: body.previousOwners || null,
       ownershipStates: body.ownershipStates || null,
       ownershipLength: body.ownershipLength || null,
-      lastReportedMileage: body.lastReportedMileage || null,
       currentOdometerReading: body.currentOdometerReading || null,
       floodOrLemonTitle: body.floodOrLemonTitle || null,
+
       createdAt: new Date(),
       showListing: true,
       listingClosed: false,
       bids: [],
     };
 
-    // Insert car into the database
     const result = await db.collection("cars").insertOne(newCar);
 
     return new Response(
       JSON.stringify({
         message: "Car added successfully",
         carId: result.insertedId,
-        redirectTo: `/car/${result.insertedId}`, // Include the redirect URL
+        redirectTo: `/car/${result.insertedId}`,
       }),
       { status: 201 }
     );
