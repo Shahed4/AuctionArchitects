@@ -1,6 +1,6 @@
 import { MongoClient } from "mongodb";
 
-const uri = process.env.MONGODB_URI; // Ensure this is correctly set
+const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri);
 
 const getDatabase = async () => {
@@ -16,25 +16,29 @@ export default async function handler(req, res) {
       const db = await getDatabase();
       const usersCollection = db.collection("users");
 
-      const { carId } = req.body;
+      const { carId, actionType } = req.body;
 
-      // Retrieve the user's current userBids array
+      if (!["userBids", "userListings"].includes(actionType)) {
+        return res.status(400).json({ error: "Invalid actionType" });
+      }
+
+      // Retrieve the user's current array for the specified action type
       const user = await usersCollection.findOne({ auth0Id: userId });
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      const currentUserBids = user.userBids || [];
+      const currentArray = user[actionType] || [];
 
-      // Add the carId to the userBids array if it's not already present
-      const updatedUserBids = currentUserBids.includes(carId)
-        ? currentUserBids
-        : [...currentUserBids, carId];
+      // Add the carId to the array if it's not already present
+      const updatedArray = currentArray.includes(carId)
+        ? currentArray
+        : [...currentArray, carId];
 
       const result = await usersCollection.updateOne(
         { auth0Id: userId },
         {
-          $set: { userBids: updatedUserBids },
+          $set: { [actionType]: updatedArray },
         }
       );
 
@@ -43,11 +47,11 @@ export default async function handler(req, res) {
       }
 
       return res.status(200).json({
-        message: "User bids updated successfully",
-        userBids: updatedUserBids,
+        message: `${actionType} updated successfully`,
+        [actionType]: updatedArray,
       });
     } catch (error) {
-      console.error("Error updating user bids:", error);
+      console.error("Error updating user data:", error);
       return res.status(500).json({ error: "Internal server error" });
     }
   } else {

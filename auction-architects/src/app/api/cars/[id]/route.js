@@ -4,7 +4,8 @@ import { ObjectId } from "mongodb";
 export async function GET(req, context) {
   try {
     // Extract the ID from the context parameters
-    const { id } = context.params;
+    const params = await context.params;
+    const { id } = params;
 
     // Validate the ID before using it
     if (!ObjectId.isValid(id)) {

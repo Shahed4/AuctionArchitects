@@ -335,7 +335,7 @@ export default function Sell() {
     }
 
     if (!user) {
-      alert("Must be signed in to create listing.");
+      alert("Must be signed in to create a listing.");
       return;
     }
 
@@ -345,7 +345,8 @@ export default function Sell() {
       const allImages = window.uploadedKeys || [];
       const updatedFormData = { ...formData, images: allImages };
 
-      const response = await fetch("/api/cars", {
+      // Step 1: Create the car
+      const carResponse = await fetch("/api/cars", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -354,19 +355,38 @@ export default function Sell() {
         }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.redirectTo) {
-          router.push(data.redirectTo); // Redirect to the provided URL
-        } else {
-          alert("Car created successfully, but no redirect URL provided.");
-        }
-      } else {
-        const errorData = await response.json();
-        alert(`Failed to add car: ${errorData.error}`);
+      if (!carResponse.ok) {
+        const carErrorData = await carResponse.json();
+        throw new Error(`Failed to add car: ${carErrorData.error}`);
       }
+
+      const carData = await carResponse.json();
+      const newCarId = carData.carId; // Assuming the car creation API returns the new car's ObjectId as `carId`
+
+      // Step 2: Add the new car ID to userListings using the combined API
+      const userResponse = await fetch(`/api/users/update-array/${user.sub}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          carId: newCarId,
+          actionType: "userListings", // Specify which array to update
+        }),
+      });
+
+      if (!userResponse.ok) {
+        const userErrorData = await userResponse.json();
+        throw new Error(
+          `Failed to update user listings: ${userErrorData.error}`
+        );
+      }
+
+      const userData = await userResponse.json();
+
+      alert("Car created and added to your listings successfully!");
+      router.push("/profile"); // Redirect to profile or another appropriate page
     } catch (error) {
-      console.error("Error during submission:", error);
+      console.error("Error during submission:", error.message);
+      alert(`Error: ${error.message}`);
     } finally {
       setLoading(false);
     }

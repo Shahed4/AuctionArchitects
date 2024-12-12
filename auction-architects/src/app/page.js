@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useUser } from "@auth0/nextjs-auth0/client"; // Import Auth0 hook
-import NavBar from "./components/NavBar"; 
+import NavBar from "./components/NavBar";
 
 export default function Home() {
   const router = useRouter();
@@ -168,74 +168,72 @@ export default function Home() {
           </Box>
 
           {/* Car Cards */}
-<Grid container spacing={3}>
-  {filteredCars.map((car) => (
-    <Grid item xs={12} sm={6} md={4} key={car._id}>
-      <Card
-        sx={{
-          maxWidth: 345,
-          cursor: "pointer",
-          backgroundColor: "#1a1a1a",
-          border: "2px solid #fff", // White border for the card
-          "&:hover": {
-            boxShadow: "0 0 10px #fff", // Optional hover effect
-          },
-        }}
-        onClick={() => handleCardClick(car._id)}
-      >
-        {car.images?.[0] ? (
-  <CardMedia
-    component="img"
-    height="140"
-    image={`https://utfs.io/f/${car.images[0]}`}
-    alt={`${car.model}`}
-    sx={{
-      border: "2px solid #000", // Black border around the image
-      objectFit: "cover", // Ensure the image fits well
-    }}
-  />
-) : (
-  <Box
-    sx={{
-      height: "140px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: "#1a1a1a", // Background for the placeholder
-      border: "2px solid #fff", // Match card styling
-    }}
-  >
-    <Typography variant="body2" color="#bdbdbd">
-      No images attached
-    </Typography>
-  </Box>
-)}
+          <Grid container spacing={3}>
+            {filteredCars.map((car) => (
+              <Grid item xs={12} sm={6} md={4} key={car._id}>
+                <Card
+                  sx={{
+                    maxWidth: 345,
+                    cursor: "pointer",
+                    backgroundColor: "#1a1a1a",
+                    border: "2px solid #fff", // White border for the card
+                    "&:hover": {
+                      boxShadow: "0 0 10px #fff", // Optional hover effect
+                    },
+                  }}
+                  onClick={() => handleCardClick(car._id)}
+                >
+                  {car.images?.[0] ? (
+                    <CardMedia
+                      component="img"
+                      height="140"
+                      image={`https://utfs.io/f/${car.images[0]}`}
+                      alt={`${car.model}`}
+                      sx={{
+                        border: "2px solid #000", // Black border around the image
+                        objectFit: "cover", // Ensure the image fits well
+                      }}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        height: "140px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: "#1a1a1a", // Background for the placeholder
+                        border: "2px solid #fff", // Match card styling
+                      }}
+                    >
+                      <Typography variant="body2" color="#bdbdbd">
+                        No images attached
+                      </Typography>
+                    </Box>
+                  )}
 
-        <CardContent>
-          <Typography
-            variant="h6"
-            sx={{
-              textAlign: "center", // Center-align the title
-              color: "#fff", // White text color for the title
-            }}
-          >
-            {car.make} {car.model}
-          </Typography>
-          <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
-            Year: {car.year} | Price: ${car.price}
-          </Typography>
-          <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
-            Minimum Bid: ${car.minBid}
-          </Typography>
-        </CardContent>
-      </Card>
-    </Grid>
-  ))}
-</Grid>
-
+                  <CardContent>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        textAlign: "center", // Center-align the title
+                        color: "#fff", // White text color for the title
+                      }}
+                    >
+                      {car.make} {car.model}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
+                      Year: {car.year} | Price: ${car.price}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
+                      Minimum Bid: ${car.minBid}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
         </Box>
       </Container>
-    
     </Box>
   );
 }
