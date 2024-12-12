@@ -306,6 +306,23 @@ export default function CheckoutPage() {
     );
   }
 
+  if(!car.showListing) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          color: "#fff",
+          backgroundColor: "#000",
+        }}
+      >
+        <Typography>Listing is Disabled</Typography>
+      </Box>
+    );
+  }
+
   if (fetchError || userByIdError) {
     return (
       <Box
