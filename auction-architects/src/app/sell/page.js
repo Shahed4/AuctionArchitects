@@ -240,6 +240,22 @@ export default function Sell() {
   };
 
   const handleNext = () => {
+    // Additional validation for Step 1
+    if (step === 1) {
+      const minBid = parseFloat(formData.minBid);
+      const buyNowPrice = parseFloat(formData.price);
+  
+      if (isNaN(minBid) || isNaN(buyNowPrice)) {
+        alert("Please provide valid numbers for Minimum Bid and Buy Now Price.");
+        return;
+      }
+  
+      if (buyNowPrice < minBid) {
+        alert("Buy Now Price must be greater than or equal to the Minimum Bid Price.");
+        return;
+      }
+    }
+  
     const { valid, missingFields } = validateStep(step, formData);
     if (!valid) {
       alert(
@@ -249,14 +265,15 @@ export default function Sell() {
       );
       return;
     }
-
+  
     // Mark the step as completed
     const updatedCompletedSteps = [...completedSteps];
     updatedCompletedSteps[step - 1] = true;
     setCompletedSteps(updatedCompletedSteps);
-
+  
     setStep((prev) => prev + 1);
   };
+  
 
   const handleBack = () => {
     setStep((prev) => prev - 1);
