@@ -70,13 +70,27 @@ export default function CheckoutPage() {
   };
 
   const handleCheckout = async () => {
+    // Validate bid conditions
+    if (!car.showListing) {
+      return alert("Listing Not Available");
+    }
+    if (car.listingClosed) {
+      return alert("Listing Has Closed");
+    }
+    if (!user) {
+      return alert("Login to Bid.");
+    }
+
+    if (userInfo.isSuspended && userInfo.numSuspensions < 3) {
+      return alert(
+        `You are currently suspended. You have been suspended ${userInfo.numSuspensions} times. Pay $50 to be unsuspended.`
+      );
+    } else if (userInfo.isSuspended && userInfo.numSuspensions >= 3) {
+      return alert(`You are permanetely suspended.`);
+    }
+
     const prevBidder = car.bidderId;
     const prevAmount = car.currBid;
-
-    console.log("Previous Bidder: ", prevBidder);
-    console.log("Previous Amount: ", prevAmount);
-    console.log("User Id: ", user.sub);
-    console.log("User balance: ", userInfo.balance);
 
     if (
       prevBidder &&
@@ -99,11 +113,9 @@ export default function CheckoutPage() {
 
       const data = await response.json();
       if (response.ok) {
-        console.log("Before Refund");
         if (prevBidder) {
           await updateUserBalance(prevBidder, "deposit", prevAmount);
         }
-        console.log("After Refund");
       } else {
         console.error("Checkout error:", data.error);
         alert(data.error || "Checkout failed.");
@@ -126,6 +138,16 @@ export default function CheckoutPage() {
       return alert("Login to Bid.");
     }
 
+    if (userInfo.isSuspended && userInfo.numSuspensions < 3) {
+      return alert(
+        `You are currently suspended. You have been suspended ${userInfo.numSuspensions} times. Pay $50 to be unsuspended.`
+      );
+    } else if (userInfo.isSuspended && userInfo.numSuspensions >= 3) {
+      return alert(
+        `You are permanetely suspended. Only admins can unsuspend you.`
+      );
+    }
+
     const bidDifference = car.price - car.currBid;
     const increment = bidDifference > 1000 ? 500 : 100;
 
@@ -146,11 +168,9 @@ export default function CheckoutPage() {
     const prevAmount = car.currBid;
 
     // Refund Previous Winner
-    console.log("Before Refund");
     if (prevBidder) {
       await updateUserBalance(prevBidder, "deposit", prevAmount);
     }
-    console.log("After Refund");
 
     if (bidAmount >= car.price) {
       alert(
@@ -176,17 +196,13 @@ export default function CheckoutPage() {
       alert("Bid placed successfully!");
 
       // Update user's bids and balance
-      console.log("Before Charging New User");
       await updateUserBalance(user.sub, "withdraw", bidAmount);
-      console.log("After Charging New User");
       await updateUserBids();
 
       // Send invoice email
       // await sendInvoiceEmail();
     } catch (error) {
-      console.log("Before Cancel Refund");
       await updateUserBalance(prevBidder, "withdraw", prevAmount);
-      console.log("After Cancel Refund");
       console.error("Error placing bid:", error);
       alert("An error occurred while placing the bid.");
     }
