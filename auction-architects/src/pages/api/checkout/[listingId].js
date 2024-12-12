@@ -57,6 +57,12 @@ export default async function handler(req, res) {
     );
     const updatedUserPurchases = [...(userDoc.userPurchases || []), listingId];
 
+    // Add "buyer-vip" role if purchases >= 3
+    const updatedRoles = new Set(userDoc.roles || []);
+    if (updatedUserPurchases.length >= 3) {
+      updatedRoles.add("buyer-vip");
+    }
+
     // Update user details
     const userUpdateResult = await db.collection("users").updateOne(
       { auth0Id: userId },
@@ -64,6 +70,7 @@ export default async function handler(req, res) {
         $set: {
           userBids: updatedUserBids,
           userPurchases: updatedUserPurchases,
+          roles: Array.from(updatedRoles),
         },
         $inc: { balance: -car.price }, // Deduct car price from user balance
       }
@@ -77,6 +84,7 @@ export default async function handler(req, res) {
       message: "Checkout successful!",
       userBids: updatedUserBids,
       userPurchases: updatedUserPurchases,
+      roles: Array.from(updatedRoles),
     });
   } catch (error) {
     console.error("Error during checkout:", error);

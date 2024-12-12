@@ -432,7 +432,7 @@ export default function Profile() {
                   ? "No Ratings Yet"
                   : `Rating: ${(
                       userInfo.reviews.reduce(
-                        (sum, review) => sum + review.score,
+                        (sum, review) => sum + review.rating,
                         0
                       ) / userInfo.reviews.length
                     ).toFixed(1)}/5`}
