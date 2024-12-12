@@ -43,9 +43,6 @@ export async function POST(req) {
 
     // Validate required fields
     const requiredFields = [
-      "name",
-      "address",
-      "phone",
       "make",
       "model",
       "year",

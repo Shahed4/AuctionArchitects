@@ -7,6 +7,8 @@ import React, { useState } from "react";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { useEffect } from "react";
 
+import useUserInfo from "../../hooks/useUserInfo";
+
 import {
   Box,
   Container,
@@ -21,8 +23,7 @@ import {
 
 export default function Sell() {
   const { user, error, isLoading } = useUser();
-  const [isLoadingData, setIsLoadingData] = useState(true);
-  const [userInfo, setUserInfo] = useState(null);
+  const { userInfo, isLoadingData, fetchError } = useUserInfo(user);
   const router = useRouter();
   const [alertShown, setAlertShown] = useState(false);
 
@@ -31,10 +32,6 @@ export default function Sell() {
   const [completedSteps, setCompletedSteps] = useState(Array(6).fill(false));
 
   const [formData, setFormData] = useState({
-    // Personal Info
-    name: "",
-    address: "",
-    phone: "",
     // Car Details
     vin: "",
     make: "",
@@ -78,34 +75,6 @@ export default function Sell() {
   });
 
   useEffect(() => {
-    const fetchUserInfo = async () => {
-      if (!user?.sub) return; // Ensure user.sub is available before making the request
-
-      try {
-        const response = await fetch(`/api/users/${user.sub}`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to fetch user info");
-        }
-
-        const data = await response.json();
-        setUserInfo(data);
-      } catch (err) {
-        console.error("Error fetching user info:", err.message);
-        setFetchError(err.message); // Store the fetch error
-      } finally {
-        setIsLoadingData(false);
-      }
-    };
-
-    fetchUserInfo();
-  }, [user?.sub]);
-
-  useEffect(() => {
     if (userInfo && !userInfo.roles.includes("seller") && !alertShown) {
       alert("Must be a seller to create a listing.");
       setAlertShown(true);
@@ -136,7 +105,6 @@ export default function Sell() {
   if (!user) return null;
 
   const steps = [
-    "Personal Information",
     "Car Details/Auction Details",
     "Accident Data",
     "Service History",
@@ -188,14 +156,7 @@ export default function Sell() {
     };
 
     switch (currentStep) {
-      case 1: // Personal Information
-        if (!data.name) missingFields.push("Name");
-        if (!data.address) missingFields.push("Address");
-        if (!data.phone || data.phone.toString().length !== 10) {
-          missingFields.push("Valid Phone Number (10 digits)");
-        }
-        break;
-      case 2: // Car Details
+      case 1: // Car Details
         [
           "vin",
           "make",
@@ -212,7 +173,7 @@ export default function Sell() {
             missingFields.push(field.charAt(0).toUpperCase() + field.slice(1));
         });
         break;
-      case 3: // Accident Data
+      case 2: // Accident Data
         if (!data.accidentHistory) {
           missingFields.push("Accident History");
         } else {
@@ -233,7 +194,7 @@ export default function Sell() {
           }
         }
         break;
-      case 4: // Service History
+      case 3: // Service History
         // Short-term
         [
           "oilChanges",
@@ -258,12 +219,12 @@ export default function Sell() {
           if (!data[field]) missingFields.push(field);
         });
         break;
-      case 5: // Ownership History
+      case 4: // Ownership History
         // Based on previous logic, only "floodOrLemonTitle" was set to required in code before.
         // If you consider other fields required, add them similarly.
         if (!data.floodOrLemonTitle) missingFields.push("Flood or Lemon Title");
         break;
-      case 6: // Upload Images
+      case 5: // Upload Images
         // No direct required fields, but must be done before submit.
         // Typically images might not be strictly required unless you define so.
         // If needed, add logic for required images here.
@@ -383,7 +344,7 @@ export default function Sell() {
       const userData = await userResponse.json();
 
       alert("Car created and added to your listings successfully!");
-      router.push("/profile"); // Redirect to profile or another appropriate page
+      router.push(`/car/${newCarId}`); // Redirect to profile or another appropriate page
     } catch (error) {
       console.error("Error during submission:", error.message);
       alert(`Error: ${error.message}`);
@@ -455,56 +416,8 @@ export default function Sell() {
             boxShadow: "0px 4px 10px rgba(255,255,255,0.2)",
           }}
         >
-          {/* STEP 1: Personal Info */}
+          {/* STEP 1: Car Details */}
           {step === 1 && (
-            <Box>
-              <Typography variant="h5" sx={{ mb: 2, color: "#fff" }}>
-                Personal Information
-              </Typography>
-              <TextField
-                label="Your Name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                fullWidth
-                sx={{ ...textFieldStyles, mb: 2 }}
-              />
-              <TextField
-                label="Address"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                required
-                fullWidth
-                sx={{ ...textFieldStyles, mb: 2 }}
-              />
-              <TextField
-                label="Phone Number"
-                name="phone"
-                type="number"
-                inputProps={{ maxLength: 10 }}
-                value={formData.phone}
-                onChange={handleChange}
-                required
-                fullWidth
-                sx={{ ...textFieldStyles, mb: 2 }}
-              />
-
-              <Box display="flex" justifyContent="flex-end" mt={3}>
-                <Button
-                  variant="contained"
-                  onClick={handleNext}
-                  sx={{ backgroundColor: "#1976d2", color: "#fff" }}
-                >
-                  Next
-                </Button>
-              </Box>
-            </Box>
-          )}
-
-          {/* STEP 2: Car Details */}
-          {step === 2 && (
             <Box>
               <Typography variant="h5" sx={{ mb: 2, color: "#fff" }}>
                 Car Details / Auction Details
@@ -697,8 +610,8 @@ export default function Sell() {
             </Box>
           )}
 
-          {/* STEP 3: Accident Data */}
-          {step === 3 && (
+          {/* STEP 2: Accident Data */}
+          {step === 2 && (
             <Box>
               <Typography variant="h5" sx={{ mb: 2, color: "#fff" }}>
                 Accident Data
@@ -793,8 +706,8 @@ export default function Sell() {
             </Box>
           )}
 
-          {/* STEP 4: Service History */}
-          {step === 4 && (
+          {/* STEP 3: Service History */}
+          {step === 3 && (
             <Box>
               <Typography variant="h5" sx={{ mb: 2, color: "#fff" }}>
                 Service History (Short-Term)
@@ -879,8 +792,8 @@ export default function Sell() {
             </Box>
           )}
 
-          {/* STEP 5: Ownership History */}
-          {step === 5 && (
+          {/* STEP 4: Ownership History */}
+          {step === 4 && (
             <Box>
               <Typography variant="h5" sx={{ mb: 2, color: "#fff" }}>
                 Ownership History
@@ -950,8 +863,8 @@ export default function Sell() {
             </Box>
           )}
 
-          {/* STEP 6: Upload Images & Submit */}
-          {step === 6 && (
+          {/* STEP 5: Upload Images & Submit */}
+          {step === 5 && (
             <Box>
               <Typography variant="h5" sx={{ mb: 2, color: "#fff" }}>
                 Upload Images

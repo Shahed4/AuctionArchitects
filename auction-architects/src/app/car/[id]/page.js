@@ -20,6 +20,8 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 
+import useUserInfo from "../../../hooks/useUserInfo";
+
 export default function CheckoutPage() {
   const { id } = useParams(); // Dynamically resolve params
   const [car, setCar] = useState(null);
@@ -27,6 +29,7 @@ export default function CheckoutPage() {
   const [bidAmount, setBidAmount] = useState(""); // To store the bid amount
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const { userInfo, isLoadingData, fetchError } = useUserInfo(user);
 
   // Fetch car details
   useEffect(() => {
@@ -195,7 +198,7 @@ export default function CheckoutPage() {
     }
   };
 
-  if (loading) {
+  if (loading || isLoadingData) {
     return (
       <Box
         sx={{
@@ -622,7 +625,10 @@ export default function CheckoutPage() {
         </Grid>
 
         <Box sx={{ mt: 4 }}>
-          {car.showListing && !car.listingClosed && car.currBid < car.price ? (
+          {!userInfo.userListings.includes(id) &&
+          car.showListing &&
+          !car.listingClosed &&
+          car.currBid < car.price ? (
             <>
               {/* Bid Input and Buttons Row */}
               <Box
@@ -686,6 +692,18 @@ export default function CheckoutPage() {
                   : "You must bid at least $100 more than the current bid, in increments of $100."}
               </Typography>
             </>
+          ) : userInfo.userListings.includes(id) ? (
+            <Typography
+              sx={{
+                color: "#fff",
+                textAlign: "center",
+                mt: 2,
+                fontWeight: "bold",
+                fontSize: "1.2rem",
+              }}
+            >
+              This is your listing.
+            </Typography>
           ) : car.currBid >= car.price ? (
             <Typography
               sx={{
