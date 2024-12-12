@@ -21,13 +21,13 @@ import {
 
 export default function Sell() {
   const { user, error, isLoading } = useUser();
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [userInfo, setUserInfo] = useState(null);
   const router = useRouter();
 
-  if (isLoading) return <div>Loading...</div>;
-  if (!isLoading && !user) {
-    router.push("/api/auth/login");
-  }
-  if (!user) return null;
+  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState(1); // Track which step of the form we're on
+  const [completedSteps, setCompletedSteps] = useState(Array(6).fill(false));
 
   const [formData, setFormData] = useState({
     // Personal Info
@@ -76,9 +76,62 @@ export default function Sell() {
     floodOrLemonTitle: "",
   });
 
-  const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1); // Track which step of the form we're on
-  const [completedSteps, setCompletedSteps] = useState(Array(6).fill(false));
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      if (!user?.sub) return; // Ensure user.sub is available before making the request
+
+      try {
+        const response = await fetch(`/api/users/${user.sub}`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to fetch user info");
+        }
+
+        const data = await response.json();
+        setUserInfo(data);
+      } catch (err) {
+        console.error("Error fetching user info:", err.message);
+        setFetchError(err.message); // Store the fetch error
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchUserInfo();
+  }, [user?.sub]);
+
+  useEffect(() => {
+    if (userInfo && !userInfo.roles.includes("seller")) {
+      alert("Must be a seller to create a listing.");
+      router.push("/profile");
+    }
+  }, [userInfo, router]);
+
+  if (isLoading || isLoadingData)
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          color: "#fff",
+          backgroundColor: "#000",
+        }}
+      >
+        <Typography>Loading...</Typography>
+      </Box>
+    );
+
+  if (!isLoading && !user) {
+    router.push("/api/auth/login");
+  }
+
+  if (!user) return null;
 
   const steps = [
     "Personal Information",

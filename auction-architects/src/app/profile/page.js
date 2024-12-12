@@ -35,6 +35,9 @@ export default function Profile() {
     phoneNumber: "",
   });
 
+  const capitalizeRoles = (roles) =>
+    roles.map((role) => role.charAt(0).toUpperCase() + role.slice(1));
+
   // Fetch user data from API
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -70,12 +73,66 @@ export default function Profile() {
     fetchUserInfo();
   }, [user?.sub]);
 
+  // Function to add "seller" role to the user
+  const handleBecomeSeller = async () => {
+    if (
+      userInfo.firstName === "" ||
+      userInfo.lastName === "" ||
+      userInfo.generalLocation === "" ||
+      userInfo.phoneNumber.length != 10
+    ) {
+      alert("Complete Profile Information To Become Seller");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/users/update-roles/${user.sub}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: "seller" }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update user roles");
+      }
+
+      // Fetch the updated user info after saving changes
+      const updatedResponse = await fetch(`/api/users/${user.sub}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!updatedResponse.ok) {
+        throw new Error("Failed to fetch updated user info");
+      }
+
+      const updatedUserInfo = await updatedResponse.json();
+      setUserInfo(updatedUserInfo);
+
+      alert("Added role successfully!");
+    } catch (err) {
+      console.error("Error updating user roles:", err.message);
+      alert("Failed to update roles. Please try again later.");
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEditFields((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSaveChanges = async () => {
+    if (
+      userInfo.firstName === "" ||
+      userInfo.lastName === "" ||
+      userInfo.generalLocation === "" ||
+      userInfo.phoneNumber.length != 10
+    ) {
+      alert("At least one is blank");
+      return;
+    }
+
     if (
       editFields.firstName === "" ||
       editFields.lastName === "" ||
@@ -173,9 +230,37 @@ export default function Profile() {
               <Typography variant="h6" sx={{ mt: 1, mb: 0.5 }}>
                 {userInfo.firstName} {userInfo.lastName}
               </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Seller
-              </Typography>
+              <Box>
+                {" "}
+                <Typography variant="body2" color="textSecondary">
+                  {" "}
+                  {userInfo.roles.includes("admin") ? (
+                    <>Admin</>
+                  ) : userInfo.roles.includes("buyer-vip") &&
+                    userInfo.roles.includes("seller") ? (
+                    <>Buyer-VIP | Seller</>
+                  ) : userInfo.roles.includes("buyer") &&
+                    userInfo.roles.includes("seller") ? (
+                    <>Buyer | Seller</>
+                  ) : userInfo.roles.includes("buyer-vip") &&
+                    userInfo.roles.includes("buyer") ? (
+                    <>Buyer-VIP</>
+                  ) : (
+                    <>{capitalizeRoles(userInfo.roles).join(" | ")}</>
+                  )}{" "}
+                </Typography>{" "}
+                {!userInfo.roles.includes("seller") && (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    style={{ marginTop: "10px" }}
+                    onClick={handleBecomeSeller}
+                  >
+                    {" "}
+                    Become a Seller{" "}
+                  </Button>
+                )}{" "}
+              </Box>
               <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
                 {userInfo.generalLocation}
               </Typography>
@@ -193,29 +278,6 @@ export default function Profile() {
                       ) / userInfo.reviews.length
                     ).toFixed(1)}/5`}
               </Typography>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "center",
-                  flexWrap: "wrap",
-                }}
-              >
-                <Chip
-                  label="Clear"
-                  variant="outlined"
-                  sx={{ m: 0.5, boxShadow: 1 }}
-                />
-                <Chip
-                  label="Concise"
-                  variant="outlined"
-                  sx={{ m: 0.5, boxShadow: 1 }}
-                />
-                <Chip
-                  label="Responds Quickly"
-                  variant="outlined"
-                  sx={{ m: 0.5, boxShadow: 1 }}
-                />
-              </Box>
             </CardContent>
           </Card>
 
