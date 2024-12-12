@@ -21,6 +21,7 @@ import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 
 import useUserInfo from "../../../hooks/useUserInfo";
+import useUserInfoById from "../../../hooks/useUserInfoById";
 
 export default function CheckoutPage() {
   const { id } = useParams(); // Dynamically resolve params
@@ -30,6 +31,12 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { userInfo, isLoadingData, fetchError } = useUserInfo(user);
+
+  const {
+    userById: sellerInfo,
+    isFetchingUserById,
+    userByIdError,
+  } = useUserInfoById(car?.sellerId || null);
 
   // Fetch car details
   useEffect(() => {
@@ -198,7 +205,7 @@ export default function CheckoutPage() {
     }
   };
 
-  if (loading || isLoadingData) {
+  if (loading || isLoadingData || isFetchingUserById) {
     return (
       <Box
         sx={{
@@ -211,6 +218,23 @@ export default function CheckoutPage() {
         }}
       >
         <Typography>Loading...</Typography>
+      </Box>
+    );
+  }
+
+  if (fetchError || userByIdError) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          color: "#fff",
+          backgroundColor: "#000",
+        }}
+      >
+        <Typography>{fetchError || userByIdError}</Typography>
       </Box>
     );
   }
@@ -424,13 +448,20 @@ export default function CheckoutPage() {
                 Contact Information
               </Typography>
               <Typography>
-                <strong>Name:</strong> {car.name || "Not provided"}
+                <strong>Name:</strong>{" "}
+                {sellerInfo?.firstName || sellerInfo?.lastName
+                  ? `${sellerInfo.firstName || ""} ${
+                      sellerInfo.lastName || ""
+                    }`.trim()
+                  : "Not provided"}
               </Typography>
               <Typography>
-                <strong>Phone:</strong> {car.phone || "Not provided"}
+                <strong>Phone:</strong>{" "}
+                {sellerInfo?.phoneNumber?.trim() || "Not provided"}
               </Typography>
               <Typography>
-                <strong>Area:</strong> {car.address || "Not provided"}
+                <strong>Area:</strong>{" "}
+                {sellerInfo?.generalLocation?.trim() || "Not provided"}
               </Typography>
             </Box>
 
@@ -582,46 +613,52 @@ export default function CheckoutPage() {
             </Accordion>
           </Grid>
 
-          {/* Row 3: Service History Short-Term, Service History Long-Term */}
-          <Grid item xs={12} md={6}>
-            <Accordion
-              disableGutters
-              sx={{
-                backgroundColor: "#1a1a1a",
-                color: "#fff",
-                boxShadow: "0 2px 5px rgba(255, 255, 255, 0.2)",
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon sx={{ color: "#fff" }} />}
-              >
-                <Typography>Service History (Short-Term)</Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                {renderDataList(serviceHistoryShortTerm)}
-              </AccordionDetails>
-            </Accordion>
-          </Grid>
+          {(userInfo.roles.includes("admin") ||
+            userInfo.roles.includes("buyer-vip") ||
+            userInfo.userListings.includes(car._id)) && (
+            <>
+              {/* Row 3: Service History Short-Term, Service History Long-Term */}
+              <Grid item xs={12} md={6}>
+                <Accordion
+                  disableGutters
+                  sx={{
+                    backgroundColor: "#1a1a1a",
+                    color: "#fff",
+                    boxShadow: "0 2px 5px rgba(255, 255, 255, 0.2)",
+                  }}
+                >
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon sx={{ color: "#fff" }} />}
+                  >
+                    <Typography>Service History (Short-Term)</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    {renderDataList(serviceHistoryShortTerm)}
+                  </AccordionDetails>
+                </Accordion>
+              </Grid>
 
-          <Grid item xs={12} md={6}>
-            <Accordion
-              disableGutters
-              sx={{
-                backgroundColor: "#1a1a1a",
-                color: "#fff",
-                boxShadow: "0 2px 5px rgba(255, 255, 255, 0.2)",
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon sx={{ color: "#fff" }} />}
-              >
-                <Typography>Service History (Long-Term)</Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                {renderDataList(serviceHistoryLongTerm)}
-              </AccordionDetails>
-            </Accordion>
-          </Grid>
+              <Grid item xs={12} md={6}>
+                <Accordion
+                  disableGutters
+                  sx={{
+                    backgroundColor: "#1a1a1a",
+                    color: "#fff",
+                    boxShadow: "0 2px 5px rgba(255, 255, 255, 0.2)",
+                  }}
+                >
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon sx={{ color: "#fff" }} />}
+                  >
+                    <Typography>Service History (Long-Term)</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    {renderDataList(serviceHistoryLongTerm)}
+                  </AccordionDetails>
+                </Accordion>
+              </Grid>
+            </>
+          )}
         </Grid>
 
         <Box sx={{ mt: 4 }}>
