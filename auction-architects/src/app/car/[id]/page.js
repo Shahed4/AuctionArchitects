@@ -19,6 +19,7 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import Link from "next/link";
 
 import useUserInfo from "../../../hooks/useUserInfo";
 import useUserInfoById from "../../../hooks/useUserInfoById";
@@ -462,6 +463,16 @@ export default function CheckoutPage() {
               <Typography>
                 <strong>Area:</strong>{" "}
                 {sellerInfo?.generalLocation?.trim() || "Not provided"}
+              </Typography>
+              <Typography>
+                <strong>
+                  <Link
+                    href={`/user/${sellerInfo?.auth0Id || ""}`}
+                    style={{ color: "#4caf50", textDecoration: "none" }}
+                  >
+                    View Profile
+                  </Link>
+                </strong>
               </Typography>
             </Box>
 
