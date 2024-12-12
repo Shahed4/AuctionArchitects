@@ -244,10 +244,6 @@ export default function Profile() {
 
       const { user: updatedUser } = await response.json();
 
-      setUsers((prevUsers) =>
-        prevUsers.map((user) => (user.auth0Id === userId ? updatedUser : user))
-      );
-
       alert(
         `User ${
           action === "suspend" ? "suspended" : "unsuspended"
@@ -256,7 +252,7 @@ export default function Profile() {
 
       handleBalanceUpdate("withdraw", 50);
     } catch (error) {
-      console.error(`Error ${action}ing user:`, error.message);
+      console.error(`Error withdrawing user:`, error.message);
     }
   };
 
