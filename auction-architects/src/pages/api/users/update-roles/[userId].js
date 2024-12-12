@@ -11,37 +11,30 @@ const getDatabase = async () => {
 export default async function handler(req, res) {
   const { userId } = req.query; // `query` contains dynamic route segments
 
-  if (req.method === "GET") {
+  if (req.method === "PUT") {
     try {
       const db = await getDatabase();
       const usersCollection = db.collection("users");
 
+      const { role } = req.body;
+
+      // Retrieve the user's current roles
       const user = await usersCollection.findOne({ auth0Id: userId });
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      return res.status(200).json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      return res.status(500).json({ error: "Internal server error" });
-    }
-  } else if (req.method === "PUT") {
-    try {
-      const db = await getDatabase();
-      const usersCollection = db.collection("users");
+      const currentRoles = user.roles || [];
 
-      const { firstName, lastName, generalLocation, phoneNumber } = req.body;
+      // Add "seller" to the roles array if it's not already present
+      const updatedRoles = currentRoles.includes(role)
+        ? currentRoles
+        : [...currentRoles, role];
 
       const result = await usersCollection.updateOne(
         { auth0Id: userId },
         {
-          $set: {
-            firstName,
-            lastName,
-            generalLocation,
-            phoneNumber,
-          },
+          $set: { roles: updatedRoles },
         }
       );
 
@@ -49,13 +42,15 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      return res.status(200).json({ message: "User updated successfully" });
+      return res
+        .status(200)
+        .json({ message: "User updated successfully", roles: updatedRoles });
     } catch (error) {
-      console.error("Error updating user:", error);
+      console.error("Error updating user roles:", error);
       return res.status(500).json({ error: "Internal server error" });
     }
   } else {
-    res.setHeader("Allow", ["GET", "PUT"]);
+    res.setHeader("Allow", ["PUT"]);
     return res.status(405).end(`Method ${req.method} not allowed`);
   }
 }
