@@ -219,13 +219,10 @@ export default function Home() {
                         color: "#fff", // White text color for the title
                       }}
                     >
-                      {car.make} {car.model}
+                     {car.year} {car.make} {car.model}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
-                      Year: {car.year} | Price: ${car.price}
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
-                      Current Bid: ${car.currBid}
+                    <Typography variant="body2" sx={{ textAlign: "center", color: "#bdbdbd" }}>
+                      Price: ${car.price} | Current Bid: ${car.currBid}
                     </Typography>
                   </CardContent>
                 </Card>
