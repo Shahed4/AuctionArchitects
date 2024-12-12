@@ -35,3 +35,47 @@ export async function GET(req, context) {
     );
   }
 }
+
+export async function PATCH(req, { params }) {
+  try {
+    console.log("Received params:", params);
+    const { id } = params;
+    console.log("Received ID from params:", id);
+
+    if (!id || !ObjectId.isValid(id)) {
+      console.error("Invalid ID received:", id);
+      return new Response(
+        JSON.stringify({ error: "Invalid or missing car ID." }),
+        { status: 400 }
+      );
+    }
+
+    const client = await clientPromise;
+    const db = client.db("Auction");
+
+    const result = await db.collection("cars").updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { showListing: false } }
+    );
+
+    console.log("MongoDB Update Result:", result);
+
+    if (result.modifiedCount === 0) {
+      console.error("No documents were updated for ID:", id);
+      return new Response(
+        JSON.stringify({ error: "Failed to update showListing." }),
+        { status: 500 }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ message: "showListing updated successfully." }),
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error in PATCH handler:", error);
+    return new Response(JSON.stringify({ error: "Internal Server Error" }), {
+      status: 500,
+    });
+  }
+}

@@ -15,32 +15,47 @@ import {
 import useUserInfo from "../../hooks/useUserInfo";
 
 // Reusable Admin Card Component for Users or Listings
-const AdminCard = ({ title, subtitle, onAction, actionLabel, status, isBanned }) => (
+const AdminCard = ({
+  title,
+  subtitle,
+  onAction,
+  actionLabel,
+  status,
+  isBanned,
+  isInactive,
+}) => (
   <Card
     sx={{
       backgroundColor: isBanned
-  ? "#FFCDD2" // Red for permanently banned users
-  : status === "Suspended"
-  ? "#FFD700" // Gold for suspended users
-  : "#1a1a1a", // Default for active users
-  color: isBanned || status === "Suspended" ? "#000" : "#fff", // Black text for red and gold backgrounds, white for default
-  border: "1px solid #fff",
+        ? "#FFCDD2" // Red for banned users
+        : isInactive
+        ? "#808080" // Gray for inactive listings
+        : status === "Suspended"
+        ? "#FFD700" // Gold for suspended users
+        : "#1a1a1a", // Default for active users
+      color: isBanned || isInactive || status === "Suspended" ? "#000" : "#fff", // Adjust text color for gray, red, or gold backgrounds
+      border: "1px solid #fff",
       mb: 2,
     }}
   >
     <CardContent>
       <Typography variant="h6">{title}</Typography>
-      <Typography variant="body2" color={isBanned ? "#757575" : "#bdbdbd"} gutterBottom>
+      <Typography
+        variant="body2"
+        color={isBanned || isInactive ? "#757575" : "#bdbdbd"}
+        gutterBottom
+      >
         {subtitle}
       </Typography>
-      <Typography variant="body2" color={isBanned ? "#B71C1C" : "#616161"} gutterBottom>
-        Status: {status}
+      <Typography variant="body2" color={isInactive ? "#B71C1C" : "#616161"}>
+        Status: {isInactive ? "Inactive" : "Active"}
       </Typography>
-      {!isBanned && (
+      {!isBanned && !isInactive && (
         <Button
           variant="contained"
           sx={{
-            backgroundColor: status === "Suspended" ? "#4caf50" : "#d32f2f", // Green for Unsuspend, Red for Suspend
+            backgroundColor:
+              status === "Suspended" ? "#4caf50" : "#d32f2f", // Green for Unsuspend, Red for Suspend
             color: "#fff",
           }}
           onClick={onAction}
@@ -51,6 +66,7 @@ const AdminCard = ({ title, subtitle, onAction, actionLabel, status, isBanned })
     </CardContent>
   </Card>
 );
+
 
 export default function Admin() {
   const { user, isLoading } = useUser();
@@ -102,7 +118,38 @@ export default function Admin() {
 
     fetchData();
   }, []);
-
+  const handleHideListing = async (carId) => {
+    try {
+      const response = await fetch(`/api/cars/${carId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Server Error:", errorData.error);
+        throw new Error(errorData.error || "Failed to update listing");
+      }
+  
+      alert("Listing hidden successfully.");
+    } catch (error) {
+      console.error("Error hiding listing:", error.message);
+    }
+  };
+  
+  
+  
+  // Inside your car listings render function
+  cars.map((car) => (
+    <AdminCard
+      key={car._id}
+      title={`${car.make} ${car.model}`}
+      subtitle={`Price: $${car.price} | Year: ${car.year}`}
+      onAction={() => handleHideListing(car._id)}
+      actionLabel="Hide Listing"
+    />
+  ));
+  
   // Handle user suspension or unsuspension
   const handleSuspendOrUnsuspendUser = async (userId, action) => {
     try {
@@ -140,7 +187,7 @@ export default function Admin() {
   // Handle car listing removal
   const handleRemoveCar = async (carId) => {
     try {
-      const response = await fetch(`/api/cars/${carId}`, { method: "DELETE" });
+      const response = await fetch(`/api/cars/${carId}`, { method: "PATCH" });
       if (!response.ok) throw new Error("Failed to remove car");
       setCars((prevCars) => prevCars.filter((car) => car._id !== carId));
       alert("Car listing removed successfully.");
@@ -240,23 +287,25 @@ export default function Admin() {
 
         {/* Manage Car Listings Section */}
         <Box sx={{ mt: 4 }}>
-          <Typography variant="h5" gutterBottom>
-            Manage Car Listings
-          </Typography>
-          {cars.length > 0 ? (
-            cars.map((car) => (
-              <AdminCard
-                key={car._id}
-                title={`${car.make} ${car.model}`}
-                subtitle={`Price: $${car.price} | Year: ${car.year}`}
-                onAction={() => handleRemoveCar(car._id)}
-                actionLabel="Remove Listing"
-              />
-            ))
-          ) : (
-            <Typography>No car listings available.</Typography>
-          )}
-        </Box>
+  <Typography variant="h5" gutterBottom>
+    Manage Car Listings
+  </Typography>
+  {cars.length > 0 ? (
+    cars.map((car) => (
+      <AdminCard
+        key={car._id}
+        title={`${car.make} ${car.model}`}
+        subtitle={`Price: $${car.price} | Year: ${car.year}`}
+        onAction={() => handleRemoveCar(car._id)}
+        actionLabel="Remove Listing"
+        isInactive={car.listingClosed} // Pass inactive status
+      />
+    ))
+  ) : (
+    <Typography>No car listings available.</Typography>
+  )}
+</Box>
+
       </Box>
     </Box>
   );
