@@ -140,6 +140,9 @@ export default function Profile() {
     return data;
   };
 
+  const capitalizeRoles = (roles) =>
+    roles.map((role) => role.charAt(0).toUpperCase() + role.slice(1));
+
   useEffect(() => {
     const fetchUserData = async () => {
       if (!user?.sub) return;
@@ -173,6 +176,50 @@ export default function Profile() {
 
     fetchUserData();
   }, [user]);
+
+  // Function to add "seller" role to the user
+  const handleBecomeSeller = async () => {
+    if (
+      userInfo.firstName === "" ||
+      userInfo.lastName === "" ||
+      userInfo.generalLocation === "" ||
+      userInfo.phoneNumber.length != 10
+    ) {
+      alert("Complete Profile Information To Become Seller");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/users/update-roles/${user.sub}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: "seller" }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update user roles");
+      }
+
+      // Fetch the updated user info after saving changes
+      const updatedResponse = await fetch(`/api/users/${user.sub}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!updatedResponse.ok) {
+        throw new Error("Failed to fetch updated user info");
+      }
+
+      const updatedUserInfo = await updatedResponse.json();
+      setUserInfo(updatedUserInfo);
+
+      alert("Added role successfully!");
+    } catch (err) {
+      console.error("Error updating user roles:", err.message);
+      alert("Failed to update roles. Please try again later.");
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
