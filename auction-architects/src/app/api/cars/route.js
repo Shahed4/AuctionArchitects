@@ -73,11 +73,6 @@ export async function POST(req) {
       sellerId: userId,
       bidderId: null,
 
-      // Seller Info
-      name: formData.name,
-      address: formData.address,
-      phone: formData.phone,
-
       // Basic Car Info
       vin: formData.vin || null,
       make: formData.make,

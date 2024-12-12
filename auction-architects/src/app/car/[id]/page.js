@@ -70,21 +70,40 @@ export default function CheckoutPage() {
   };
 
   const handleCheckout = async () => {
+    const prevBidder = car.bidderId;
+    const prevAmount = car.currBid;
+
+    console.log("Previous Bidder: ", prevBidder);
+    console.log("Previous Amount: ", prevAmount);
+    console.log("User Id: ", user.sub);
+    console.log("User balance: ", userInfo.balance);
+
+    if (
+      prevBidder &&
+      prevBidder === user.sub &&
+      prevAmount + userInfo.balance < car.price
+    ) {
+      return alert("Add Funds To Your Account Via Profile Page.");
+    } else if (prevBidder !== user.sub && userInfo.balance < car.price) {
+      return alert("Add Funds To Your Account Via Profile Page.");
+    }
+
     try {
-      const response = await fetch("/api/checkout", {
+      const response = await fetch(`/api/checkout/${car._id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          carId: car._id,
-          price: car.price,
-          description: car.description,
-          model: car.model,
+          user: userInfo,
         }),
       });
 
       const data = await response.json();
       if (response.ok) {
-        window.location.href = data.url; // Redirect to Stripe Checkout
+        console.log("Before Refund");
+        if (prevBidder) {
+          await updateUserBalance(prevBidder, "deposit", prevAmount);
+        }
+        console.log("After Refund");
       } else {
         console.error("Checkout error:", data.error);
         alert(data.error || "Checkout failed.");
@@ -96,79 +115,123 @@ export default function CheckoutPage() {
   };
 
   const handleBid = async () => {
+    // Validate bid conditions
     if (!car.showListing) {
-      alert("Listing Not Available");
-      return;
-    } else if (car.listingClosed) {
-      alert("Listing Has Closed");
-      return;
+      return alert("Listing Not Available");
     }
-
+    if (car.listingClosed) {
+      return alert("Listing Has Closed");
+    }
     if (!user) {
-      alert("Login to Bid.");
-      return;
+      return alert("Login to Bid.");
     }
 
     const bidDifference = car.price - car.currBid;
-    let increment = bidDifference > 1000 ? 500 : 100;
+    const increment = bidDifference > 1000 ? 500 : 100;
 
     if (bidAmount < car.currBid + increment || bidAmount % increment !== 0) {
-      alert(
+      return alert(
         `Must place a bid of at least $${increment} more than the current bid, in increments of $${increment}.`
+      );
+    }
+
+    if (
+      car.bidderId === user.sub &&
+      car.currBid + userInfo.balance < bidAmount
+    ) {
+      return alert("Add Funds To Your Account Via Profile Page.");
+    }
+
+    const prevBidder = car.bidderId;
+    const prevAmount = car.currBid;
+
+    // Refund Previous Winner
+    console.log("Before Refund");
+    if (prevBidder) {
+      await updateUserBalance(prevBidder, "deposit", prevAmount);
+    }
+    console.log("After Refund");
+
+    if (bidAmount >= car.price) {
+      alert(
+        "Bid amount exceeds buy now price. You can purchase at the buy now price."
       );
       return;
     }
 
     // Proceed with bid submission
     try {
-      const response = await fetch(`/api/cars/${id}/bid`, {
+      const bidResponse = await fetch(`/api/cars/${id}/bid`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user,
-          id: car._id,
-          amount: bidAmount,
-        }),
+        body: JSON.stringify({ user, id: car._id, amount: bidAmount }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        alert(data.error || "Failed to place bid.");
-        return;
+      const bidData = await bidResponse.json();
+      if (!bidResponse.ok) {
+        return alert(bidData.error || "Failed to place bid.");
       }
 
-      // Update car data locally after a successful bid
-      setCar(data);
+      setCar(bidData); // Update car data
       alert("Bid placed successfully!");
 
-      // Add carId to user's userBids array using the combined API
-      try {
-        const addBidResponse = await fetch(
-          `/api/users/update-array/${user.sub}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              carId: car._id,
-              actionType: "userBids", // Specify the array to update
-            }),
-          }
-        );
+      // Update user's bids and balance
+      console.log("Before Charging New User");
+      await updateUserBalance(user.sub, "withdraw", bidAmount);
+      console.log("After Charging New User");
+      await updateUserBids();
 
-        if (!addBidResponse.ok) {
-          const errorData = await addBidResponse.json();
-          console.error("Failed to update user bids:", errorData.error);
-        } else {
-          console.log("User bids updated successfully!");
-        }
-      } catch (addBidError) {
-        console.error("Error updating user bids:", addBidError);
+      // Send invoice email
+      // await sendInvoiceEmail();
+    } catch (error) {
+      console.log("Before Cancel Refund");
+      await updateUserBalance(prevBidder, "withdraw", prevAmount);
+      console.log("After Cancel Refund");
+      console.error("Error placing bid:", error);
+      alert("An error occurred while placing the bid.");
+    }
+  };
+
+  // Helper functions
+  const updateUserBids = async () => {
+    try {
+      const response = await fetch(`/api/users/update-array/${user.sub}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ carId: car._id, actionType: "userBids" }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Failed to update user bids:", errorData.error);
+      } else {
+        console.log("User bids updated successfully!");
       }
+    } catch (error) {
+      console.error("Error updating user bids:", error);
+    }
+  };
 
-      // After a successful bid, send an email invoice
-      const invoiceSubject = `Invoice for your new bid on ${car.year} ${car.make} ${car.model}`;
-      const invoiceBody = `
+  const updateUserBalance = async (userId, action, amount) => {
+    try {
+      const response = await fetch(`/api/users/update-balance/${userId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: action, amount: amount }),
+      });
+
+      if (!response.ok) throw new Error("Failed to make payment");
+
+      const updatedUser = await response.json();
+      alert(`Successfully withdrew ${amount}`);
+    } catch (error) {
+      console.error("Error updating user balance:", error);
+    }
+  };
+
+  const sendInvoiceEmail = async () => {
+    const invoiceSubject = `Invoice for your new bid on ${car.year} ${car.make} ${car.model}`;
+    const invoiceBody = `
       <html>
         <body>
           <p>Hello!<br><br>
@@ -181,28 +244,24 @@ export default function CheckoutPage() {
       </html>
     `;
 
-      try {
-        const emailResponse = await fetch("/api/send-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            to: "alexab6104@gmail.com",
-            subject: invoiceSubject,
-            body: invoiceBody,
-          }),
-        });
+    try {
+      const response = await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: "alexab6104@gmail.com",
+          subject: invoiceSubject,
+          body: invoiceBody,
+        }),
+      });
 
-        if (!emailResponse.ok) {
-          console.error("Failed to send email invoice.");
-        } else {
-          console.log("Email invoice sent successfully!");
-        }
-      } catch (emailError) {
-        console.error("Error sending invoice email:", emailError);
+      if (!response.ok) {
+        console.error("Failed to send email invoice.");
+      } else {
+        console.log("Email invoice sent successfully!");
       }
     } catch (error) {
-      console.error("Error placing bid:", error);
-      alert("An error occurred while placing the bid.");
+      console.error("Error sending invoice email:", error);
     }
   };
 
@@ -672,7 +731,43 @@ export default function CheckoutPage() {
           )}
         </Grid>
 
-        <Box sx={{ mt: 4 }}>
+        <Box
+          sx={{
+            mt: 4,
+            p: 4,
+            backgroundColor: "#1e1e1e",
+            borderRadius: "12px",
+            boxShadow: "0 6px 15px rgba(0, 0, 0, 0.4)",
+            border: "1px solid #333",
+          }}
+        >
+          {/* Balance Display */}
+          <Typography
+            sx={{
+              color: "#fff",
+              fontSize: "1rem",
+              fontWeight: "500",
+              mb: 3,
+            }}
+          >
+            Your Balance: <strong>${userInfo.balance}</strong>
+          </Typography>
+
+          {/* Winning Bid Notification */}
+          {!car.listingClosed && car.bidderId === user.sub && (
+            <Typography
+              sx={{
+                color: "#4caf50",
+                fontSize: "1rem",
+                fontWeight: "500",
+                mb: 3,
+              }}
+            >
+              You're the lead bidder!
+            </Typography>
+          )}
+
+          {/* Bid or Buy Options */}
           {!userInfo.userListings.includes(id) &&
           car.showListing &&
           !car.listingClosed &&
@@ -684,24 +779,31 @@ export default function CheckoutPage() {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  width: "100%",
+                  flexWrap: "wrap",
+                  gap: 2,
+                  mb: 3,
                 }}
               >
                 {/* Left Side: Bid Input and Place Bid Button */}
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <TextField
-                    label="Enter Bid Amount"
+                    label={`Enter Bid Amount`}
                     type="number"
                     variant="outlined"
                     value={bidAmount}
                     onChange={(e) => setBidAmount(Number(e.target.value))}
-                    InputLabelProps={{ style: { color: "#fff" } }}
+                    InputLabelProps={{ style: { color: "#ccc" } }}
                     sx={{
-                      width: "200px",
+                      width: "250px",
                       "& .MuiOutlinedInput-root": {
-                        backgroundColor: "#1a1a1a",
+                        backgroundColor: "#2b2b2b",
                         color: "#fff",
+                        borderRadius: "8px",
+                        "&:hover fieldset": {
+                          borderColor: "#4caf50",
+                        },
                       },
+                      "& .MuiInputBase-input": { color: "#fff" },
                     }}
                   />
                   <Button
@@ -710,7 +812,10 @@ export default function CheckoutPage() {
                     sx={{
                       backgroundColor: "#4caf50",
                       "&:hover": { backgroundColor: "#388e3c" },
-                      px: 3,
+                      px: 4,
+                      py: 1.5,
+                      fontSize: "1rem",
+                      borderRadius: "8px",
                     }}
                   >
                     Place Bid
@@ -718,23 +823,31 @@ export default function CheckoutPage() {
                 </Box>
 
                 {/* Right Side: Buy Now Button */}
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Button
-                    variant="contained"
-                    onClick={handleCheckout}
-                    sx={{
-                      backgroundColor: "#1976d2",
-                      "&:hover": { backgroundColor: "#1565c0" },
-                      px: 4,
-                    }}
-                  >
-                    Buy Now
-                  </Button>
-                </Box>
+                <Button
+                  variant="contained"
+                  onClick={handleCheckout}
+                  sx={{
+                    backgroundColor: "#1976d2",
+                    "&:hover": { backgroundColor: "#1565c0" },
+                    px: 5,
+                    py: 1.5,
+                    fontSize: "1rem",
+                    borderRadius: "8px",
+                  }}
+                >
+                  Buy Now
+                </Button>
               </Box>
 
               {/* Dynamic Bid Instruction */}
-              <Typography sx={{ color: "#fff", textAlign: "center", mt: 2 }}>
+              <Typography
+                sx={{
+                  color: "#bbb",
+                  textAlign: "center",
+                  fontSize: "0.9rem",
+                  fontStyle: "italic",
+                }}
+              >
                 {car.price - car.currBid > 1000
                   ? "You must bid at least $500 more than the current bid, in increments of $500."
                   : "You must bid at least $100 more than the current bid, in increments of $100."}
@@ -743,7 +856,7 @@ export default function CheckoutPage() {
           ) : userInfo.userListings.includes(id) ? (
             <Typography
               sx={{
-                color: "#fff",
+                color: "#4caf50",
                 textAlign: "center",
                 mt: 2,
                 fontWeight: "bold",
@@ -752,10 +865,22 @@ export default function CheckoutPage() {
             >
               This is your listing.
             </Typography>
+          ) : userInfo.userPurchases.includes(id) ? (
+            <Typography
+              sx={{
+                color: "#4caf50",
+                textAlign: "center",
+                mt: 2,
+                fontWeight: "bold",
+                fontSize: "1.2rem",
+              }}
+            >
+              You have purchased this car.
+            </Typography>
           ) : car.currBid >= car.price ? (
             <Typography
               sx={{
-                color: "#fff",
+                color: "#f44336",
                 textAlign: "center",
                 mt: 2,
                 fontWeight: "bold",
@@ -767,7 +892,7 @@ export default function CheckoutPage() {
           ) : (
             <Typography
               sx={{
-                color: "#fff",
+                color: "#f44336",
                 textAlign: "center",
                 mt: 2,
                 fontWeight: "bold",
