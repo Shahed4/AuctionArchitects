@@ -177,8 +177,7 @@ export default function Profile() {
     fetchUserData();
   }, [user]);
 
-  const handleBalanceUpdate = async (action) => {
-    const amount = parseFloat(editFields.amount);
+  const handleBalanceUpdate = async (action, amount) => {
     if (isNaN(amount) || amount <= 0) {
       alert("Please enter a valid amount.");
       return;
@@ -210,7 +209,55 @@ export default function Profile() {
 
   // Function to unsuspend
   const handleUnsuspension = async () => {
-    console.log("Unsuspend");
+    if (!userInfo) {
+      return alert("No user found.");
+    }
+
+    if (!userInfo.isSuspended) {
+      return alert("You are not suspended");
+    }
+
+    if (userInfo.isSuspended && userInfo.numSuspensions >= 3) {
+      return alert("You have exceeded the unsuspension count.");
+    }
+
+    if (userInfo.balance < 50) {
+      return alert("You need $50 to become unsuspended.");
+    }
+
+    try {
+      const response = await fetch(
+        `/api/users/update-suspension/${userInfo.auth0Id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ action: "unsuspend" }), // Pass the action: "suspend" or "unsuspend"
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update user suspension");
+      }
+
+      const { user: updatedUser } = await response.json();
+
+      setUsers((prevUsers) =>
+        prevUsers.map((user) => (user.auth0Id === userId ? updatedUser : user))
+      );
+
+      alert(
+        `User ${
+          action === "suspend" ? "suspended" : "unsuspended"
+        } successfully.`
+      );
+
+      handleBalanceUpdate("withdraw", 50);
+    } catch (error) {
+      console.error(`Error ${action}ing user:`, error.message);
+    }
   };
 
   // Function to add "seller" role to the user
@@ -416,14 +463,24 @@ export default function Profile() {
                 <Button
                   variant="contained"
                   color="success"
-                  onClick={async () => await handleBalanceUpdate("deposit")}
+                  onClick={async () =>
+                    await handleBalanceUpdate(
+                      "deposit",
+                      parseFloat(editFields.amount)
+                    )
+                  }
                 >
                   Deposit
                 </Button>
                 <Button
                   variant="contained"
                   color="error"
-                  onClick={async () => await handleBalanceUpdate("withdraw")}
+                  onClick={async () =>
+                    await handleBalanceUpdate(
+                      "withdraw",
+                      parseFloat(editFields.amount)
+                    )
+                  }
                 >
                   Withdraw
                 </Button>
