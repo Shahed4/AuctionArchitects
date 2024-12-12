@@ -57,8 +57,8 @@ export default async function handler(req, res) {
         const suspensionResult = await usersCollection.updateOne(
           { auth0Id: userId },
           {
-            $set: { suspended: true },
-            $inc: { suspensionCount: 1 }, // Increment suspension count
+            $set: { isSuspended: true }, // Set suspended flag
+            $inc: { numSuspensions: 1 }, // Increment suspension count
           }
         );
 
@@ -70,7 +70,8 @@ export default async function handler(req, res) {
       return res.status(200).json({
         message: "Review added successfully",
         review,
-        userSuspended: updatedUser.suspended || false,
+        userSuspended: updatedUser.isSuspended || false,
+        numSuspensions: updatedUser.numSuspensions || 0,
       });
     } catch (error) {
       console.error("Error adding review:", error);
@@ -87,13 +88,16 @@ export function UserProfile({ user }) {
   return (
     <div>
       <h1>{user.name}</h1>
-      {user.suspended ? (
+      {user.isSuspended ? (
         <p style={{ color: "red", fontWeight: "bold" }}>
           This profile is suspended.
         </p>
       ) : (
         <p style={{ color: "green" }}>This profile is active.</p>
       )}
+
+      <h2>Suspension Count:</h2>
+      <p>{user.numSuspensions || 0} suspension(s)</p>
 
       <h2>Reviews:</h2>
       <ul>

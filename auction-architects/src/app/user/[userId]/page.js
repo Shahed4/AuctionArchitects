@@ -71,6 +71,13 @@ export default function UserProfile() {
       alert("Review submitted successfully!");
       setReviewMessage("");
       setReviewRating(0); // Reset the rating
+
+      // Refresh profile data after submitting the review
+      const refreshedResponse = await fetch(`/api/users/${userId}`);
+      if (refreshedResponse.ok) {
+        const refreshedData = await refreshedResponse.json();
+        setProfileData(refreshedData);
+      }
     } catch (error) {
       console.error(error.message);
       alert("Failed to submit review. Please try again later.");
@@ -138,6 +145,24 @@ export default function UserProfile() {
                 {profileData.generalLocation}
               </Typography>
               <Divider sx={{ my: 2 }} />
+              {profileData.isSuspended ? (
+                <Typography
+                  variant="h6"
+                  sx={{ color: "red", fontWeight: "bold", mb: 2 }}
+                >
+                  This profile is suspended.
+                </Typography>
+              ) : (
+                <Typography variant="h6" sx={{ color: "green", mb: 2 }}>
+                  This profile is active.
+                </Typography>
+              )}
+              <Typography
+                variant="subtitle1"
+                sx={{ fontWeight: "bold", mb: 2 }}
+              >
+                Suspension Count: {profileData.numSuspensions || 0}
+              </Typography>
               <Typography
                 variant="subtitle1"
                 sx={{ fontWeight: "bold", mb: 2 }}
