@@ -80,6 +80,7 @@ export default function Sell() {
       setAlertShown(true);
       router.push("/profile");
     }
+    window.uploadedKeys = [];
   }, [userInfo, router, alertShown]);
 
   if (isLoading || isLoadingData)
@@ -337,6 +338,8 @@ export default function Sell() {
         const carErrorData = await carResponse.json();
         throw new Error(`Failed to add car: ${carErrorData.error}`);
       }
+          // Clear uploaded keys after successful submission
+    window.uploadedKeys = [];
 
       const carData = await carResponse.json();
       const newCarId = carData.carId; // Assuming the car creation API returns the new car's ObjectId as `carId`
