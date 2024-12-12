@@ -15,27 +15,39 @@ import {
 import useUserInfo from "../../hooks/useUserInfo";
 
 // Reusable Admin Card Component for Users or Listings
-const AdminCard = ({ title, subtitle, onRemove }) => (
+const AdminCard = ({ title, subtitle, onAction, actionLabel, status, isBanned }) => (
   <Card
     sx={{
-      backgroundColor: "#1a1a1a",
-      color: "#fff",
-      border: "1px solid #fff",
+      backgroundColor: isBanned
+  ? "#FFCDD2" // Red for permanently banned users
+  : status === "Suspended"
+  ? "#FFD700" // Gold for suspended users
+  : "#1a1a1a", // Default for active users
+  color: isBanned || status === "Suspended" ? "#000" : "#fff", // Black text for red and gold backgrounds, white for default
+  border: "1px solid #fff",
       mb: 2,
     }}
   >
     <CardContent>
       <Typography variant="h6">{title}</Typography>
-      <Typography variant="body2" color="#bdbdbd" gutterBottom>
+      <Typography variant="body2" color={isBanned ? "#757575" : "#bdbdbd"} gutterBottom>
         {subtitle}
       </Typography>
-      <Button
-        variant="contained"
-        sx={{ backgroundColor: "#d32f2f", color: "#fff" }}
-        onClick={onRemove}
-      >
-        Remove
-      </Button>
+      <Typography variant="body2" color={isBanned ? "#B71C1C" : "#616161"} gutterBottom>
+        Status: {status}
+      </Typography>
+      {!isBanned && (
+        <Button
+          variant="contained"
+          sx={{
+            backgroundColor: status === "Suspended" ? "#4caf50" : "#d32f2f", // Green for Unsuspend, Red for Suspend
+            color: "#fff",
+          }}
+          onClick={onAction}
+        >
+          {actionLabel}
+        </Button>
+      )}
     </CardContent>
   </Card>
 );
@@ -78,6 +90,9 @@ export default function Admin() {
           carRes.json(),
         ]);
 
+        // Sort users by number of suspensions (descending order)
+        usersData.sort((a, b) => (b.numSuspensions || 0) - (a.numSuspensions || 0));
+
         setUsers(usersData);
         setCars(carsData);
       } catch (error) {
@@ -88,17 +103,37 @@ export default function Admin() {
     fetchData();
   }, []);
 
-  // Handle user removal
-  const handleRemoveUser = async (userId) => {
+  // Handle user suspension or unsuspension
+  const handleSuspendOrUnsuspendUser = async (userId, action) => {
     try {
-      const response = await fetch(`/api/users/${userId}`, {
-        method: "DELETE",
+      const response = await fetch(`/api/users/update-suspension/${userId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action }), // Pass the action: "suspend" or "unsuspend"
       });
-      if (!response.ok) throw new Error("Failed to remove user");
-      setUsers((prevUsers) => prevUsers.filter((user) => user._id !== userId));
-      alert("User removed successfully.");
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update user suspension");
+      }
+
+      const { user: updatedUser } = await response.json();
+
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user.auth0Id === userId ? updatedUser : user
+        )
+      );
+
+      alert(
+        `User ${
+          action === "suspend" ? "suspended" : "unsuspended"
+        } successfully.`
+      );
     } catch (error) {
-      console.error("Error removing user:", error.message);
+      console.error(`Error ${action}ing user:`, error.message);
     }
   };
 
@@ -173,14 +208,31 @@ export default function Admin() {
             Manage Users
           </Typography>
           {users.length > 0 ? (
-            users.map((user) => (
-              <AdminCard
-                key={user._id}
-                title={user.name || "Unknown User"}
-                subtitle={user.email || "No email available"}
-                onRemove={() => handleRemoveUser(user._id)}
-              />
-            ))
+            users.map((user) => {
+              const isBanned = (user.numSuspensions || 0) >= 3;
+              const status = isBanned
+                ? "Permanently Banned"
+                : user.isSuspended
+                ? "Suspended"
+                : "Active";
+
+              return (
+                <AdminCard
+                  key={user._id}
+                  title={user.email || "Unknown User"}
+                  subtitle={`Suspensions: ${user.numSuspensions || 0}`}
+                  status={status}
+                  onAction={() =>
+                    handleSuspendOrUnsuspendUser(
+                      user.auth0Id,
+                      user.isSuspended ? "unsuspend" : "suspend"
+                    )
+                  }
+                  actionLabel={user.isSuspended ? "Unsuspend User" : "Suspend User"}
+                  isBanned={isBanned} // Indicates if the user is permanently banned
+                />
+              );
+            })
           ) : (
             <Typography>No users available.</Typography>
           )}
@@ -197,7 +249,8 @@ export default function Admin() {
                 key={car._id}
                 title={`${car.make} ${car.model}`}
                 subtitle={`Price: $${car.price} | Year: ${car.year}`}
-                onRemove={() => handleRemoveCar(car._id)}
+                onAction={() => handleRemoveCar(car._id)}
+                actionLabel="Remove Listing"
               />
             ))
           ) : (
