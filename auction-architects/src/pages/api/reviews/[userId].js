@@ -8,6 +8,12 @@ const getDatabase = async () => {
   return client.db("Auction");
 };
 
+const calculateAverageRating = (reviews) => {
+  if (reviews.length === 0) return 0;
+  const total = reviews.reduce((sum, review) => sum + review.rating, 0);
+  return total / reviews.length;
+};
+
 export default async function handler(req, res) {
   const { userId } = req.query; // `query` contains dynamic route segments
 
@@ -42,9 +48,30 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      return res
-        .status(200)
-        .json({ message: "Review added successfully", review });
+      // Check the updated user's reviews
+      const updatedUser = await usersCollection.findOne({ auth0Id: userId });
+      const averageRating = calculateAverageRating(updatedUser.reviews);
+
+      if (updatedUser.reviews.length >= 3 && averageRating <= 2) {
+        // Suspend the user
+        const suspensionResult = await usersCollection.updateOne(
+          { auth0Id: userId },
+          {
+            $set: { suspended: true },
+            $inc: { suspensionCount: 1 }, // Increment suspension count
+          }
+        );
+
+        if (suspensionResult.modifiedCount > 0) {
+          console.log(`User ${userId} has been suspended.`);
+        }
+      }
+
+      return res.status(200).json({
+        message: "Review added successfully",
+        review,
+        userSuspended: updatedUser.suspended || false,
+      });
     } catch (error) {
       console.error("Error adding review:", error);
       return res.status(500).json({ error: "Internal server error" });
@@ -53,4 +80,34 @@ export default async function handler(req, res) {
     res.setHeader("Allow", ["POST"]);
     return res.status(405).end(`Method ${req.method} not allowed`);
   }
+}
+
+// Suspend Style Component Example for Frontend
+export function UserProfile({ user }) {
+  return (
+    <div>
+      <h1>{user.name}</h1>
+      {user.suspended ? (
+        <p style={{ color: "red", fontWeight: "bold" }}>
+          This profile is suspended.
+        </p>
+      ) : (
+        <p style={{ color: "green" }}>This profile is active.</p>
+      )}
+
+      <h2>Reviews:</h2>
+      <ul>
+        {user.reviews.map((review, index) => (
+          <li key={index}>
+            <p>
+              <strong>Rating:</strong> {review.rating}
+            </p>
+            <p>
+              <strong>Message:</strong> {review.message}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
