@@ -45,10 +45,6 @@ export async function POST(req) {
     const currentBid = parseFloat(car.currBid);
     const bidDifference = car.price - currentBid;
 
-    console.log("Current Bid:", currentBid);
-    console.log("Bid Amount:", bidAmount);
-    console.log("Bid Difference:", bidDifference);
-
     // Check if bid equals "Buy Now" price
     if (bidAmount === car.price) {
       const result = await db.collection("cars").updateOne(

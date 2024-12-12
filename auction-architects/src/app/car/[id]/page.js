@@ -131,20 +131,37 @@ export default function CheckoutPage() {
       setCar(data);
       alert("Bid placed successfully!");
 
+      // Add carId to user's userBids array
+      try {
+        const addBidResponse = await fetch(`/api/users/add-bid/${user.sub}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ carId: car._id }),
+        });
+
+        if (!addBidResponse.ok) {
+          console.error("Failed to update user bids.");
+        } else {
+          console.log("User bids updated successfully!");
+        }
+      } catch (addBidError) {
+        console.error("Error updating user bids:", addBidError);
+      }
+
       // After a successful bid, send an email invoice
       const invoiceSubject = `Invoice for your new bid on ${car.year} ${car.make} ${car.model}`;
       const invoiceBody = `
-  <html>
-    <body>
-      <p>Hello!<br><br>
-      Thank you for placing a bid of $${bidAmount} on the ${car.year} ${car.make} ${car.model}. Please rate your seller and we'll keep you updated if you win the bid!<br><br>
-      Best regards,<br>
-      <img src="https://utfs.io/f/z7jUGIcSO2eq4aiykGFs3MIfUn8F9OAWiDPkZTVJzHl2mYqX" width="16" height="16" style="vertical-align:middle; margin-right:5px;">
-      AuctionArchitects
-      </p>
-    </body>
-  </html>
-`;
+    <html>
+      <body>
+        <p>Hello!<br><br>
+        Thank you for placing a bid of $${bidAmount} on the ${car.year} ${car.make} ${car.model}. Please rate your seller and we'll keep you updated if you win the bid!<br><br>
+        Best regards,<br>
+        <img src="https://utfs.io/f/z7jUGIcSO2eq4aiykGFs3MIfUn8F9OAWiDPkZTVJzHl2mYqX" width="16" height="16" style="vertical-align:middle; margin-right:5px;">
+        AuctionArchitects
+        </p>
+      </body>
+    </html>
+  `;
 
       try {
         const emailResponse = await fetch("/api/send-email", {
@@ -504,8 +521,7 @@ export default function CheckoutPage() {
               {Math.max(
                 0,
                 Math.floor(
-                  ((new Date(car.endTime) - new Date()) / (1000 * 60 * 60)) %
-                    24
+                  ((new Date(car.endTime) - new Date()) / (1000 * 60 * 60)) % 24
                 )
               )}
               h
@@ -515,7 +531,6 @@ export default function CheckoutPage() {
 
         {/* Accordions for all sections */}
         <Grid container spacing={2} sx={{ mt: 3 }}>
-
           {/* Row 2: Accident Data, Ownership History */}
           <Grid item xs={12} md={6}>
             <Accordion
@@ -531,7 +546,9 @@ export default function CheckoutPage() {
               >
                 <Typography>Accident Data</Typography>
               </AccordionSummary>
-              <AccordionDetails>{renderDataList(accidentData)}</AccordionDetails>
+              <AccordionDetails>
+                {renderDataList(accidentData)}
+              </AccordionDetails>
             </Accordion>
           </Grid>
 
@@ -549,7 +566,9 @@ export default function CheckoutPage() {
               >
                 <Typography>Ownership History</Typography>
               </AccordionSummary>
-              <AccordionDetails>{renderDataList(ownershipHistoryData)}</AccordionDetails>
+              <AccordionDetails>
+                {renderDataList(ownershipHistoryData)}
+              </AccordionDetails>
             </Accordion>
           </Grid>
 
@@ -568,7 +587,9 @@ export default function CheckoutPage() {
               >
                 <Typography>Service History (Short-Term)</Typography>
               </AccordionSummary>
-              <AccordionDetails>{renderDataList(serviceHistoryShortTerm)}</AccordionDetails>
+              <AccordionDetails>
+                {renderDataList(serviceHistoryShortTerm)}
+              </AccordionDetails>
             </Accordion>
           </Grid>
 
@@ -586,7 +607,9 @@ export default function CheckoutPage() {
               >
                 <Typography>Service History (Long-Term)</Typography>
               </AccordionSummary>
-              <AccordionDetails>{renderDataList(serviceHistoryLongTerm)}</AccordionDetails>
+              <AccordionDetails>
+                {renderDataList(serviceHistoryLongTerm)}
+              </AccordionDetails>
             </Accordion>
           </Grid>
         </Grid>
