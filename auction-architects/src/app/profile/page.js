@@ -208,6 +208,11 @@ export default function Profile() {
     }
   };
 
+  // Function to unsuspend
+  const handleUnsuspension = async () => {
+    console.log("Unsuspend");
+  };
+
   // Function to add "seller" role to the user
   const handleBecomeSeller = async () => {
     if (
@@ -354,10 +359,19 @@ export default function Profile() {
                       style={{ marginTop: "10px" }}
                       onClick={handleBecomeSeller}
                     >
-                      {" "}
-                      Become a Seller{" "}
+                      Become a Seller
                     </Button>
-                  )}{" "}
+                  )}
+                {userInfo.isSuspended && userInfo.numSuspensions < 3 && (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    style={{ marginTop: "10px" }}
+                    onClick={handleUnsuspension}
+                  >
+                    Pay $50 to become Unsuspended
+                  </Button>
+                )}
               </Box>
               <Typography variant="body2" sx={{ mt: 1 }}>
                 {userInfo.generalLocation}

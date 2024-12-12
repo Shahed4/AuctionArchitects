@@ -77,7 +77,7 @@ export default function UserProfile() {
     }
   };
 
-  if (!profileData || isLoadingData)
+  if (!profileData || isLoadingData) {
     return (
       <Box
         sx={{
@@ -92,6 +92,24 @@ export default function UserProfile() {
         <Typography>Loading...</Typography>
       </Box>
     );
+  }
+
+  if (!isLoadingData && profileData.roles.includes("admin")) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          color: "#fff",
+          backgroundColor: "#000",
+        }}
+      >
+        <Typography>Page Doesn't Exist. Admins Can't Be Reviewed</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ padding: "2rem", marginTop: "40px" }}>
