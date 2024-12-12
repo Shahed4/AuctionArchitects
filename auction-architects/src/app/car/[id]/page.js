@@ -131,16 +131,23 @@ export default function CheckoutPage() {
       setCar(data);
       alert("Bid placed successfully!");
 
-      // Add carId to user's userBids array
+      // Add carId to user's userBids array using the combined API
       try {
-        const addBidResponse = await fetch(`/api/users/add-bid/${user.sub}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ carId: car._id }),
-        });
+        const addBidResponse = await fetch(
+          `/api/users/update-array/${user.sub}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              carId: car._id,
+              actionType: "userBids", // Specify the array to update
+            }),
+          }
+        );
 
         if (!addBidResponse.ok) {
-          console.error("Failed to update user bids.");
+          const errorData = await addBidResponse.json();
+          console.error("Failed to update user bids:", errorData.error);
         } else {
           console.log("User bids updated successfully!");
         }
@@ -151,17 +158,17 @@ export default function CheckoutPage() {
       // After a successful bid, send an email invoice
       const invoiceSubject = `Invoice for your new bid on ${car.year} ${car.make} ${car.model}`;
       const invoiceBody = `
-    <html>
-      <body>
-        <p>Hello!<br><br>
-        Thank you for placing a bid of $${bidAmount} on the ${car.year} ${car.make} ${car.model}. Please rate your seller and we'll keep you updated if you win the bid!<br><br>
-        Best regards,<br>
-        <img src="https://utfs.io/f/z7jUGIcSO2eq4aiykGFs3MIfUn8F9OAWiDPkZTVJzHl2mYqX" width="16" height="16" style="vertical-align:middle; margin-right:5px;">
-        AuctionArchitects
-        </p>
-      </body>
-    </html>
-  `;
+      <html>
+        <body>
+          <p>Hello!<br><br>
+          Thank you for placing a bid of $${bidAmount} on the ${car.year} ${car.make} ${car.model}. Please rate your seller and we'll keep you updated if you win the bid!<br><br>
+          Best regards,<br>
+          <img src="https://utfs.io/f/z7jUGIcSO2eq4aiykGFs3MIfUn8F9OAWiDPkZTVJzHl2mYqX" width="16" height="16" style="vertical-align:middle; margin-right:5px;">
+          AuctionArchitects
+          </p>
+        </body>
+      </html>
+    `;
 
       try {
         const emailResponse = await fetch("/api/send-email", {

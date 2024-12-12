@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { useRouter } from "next/navigation";
 import NavBar from "../components/NavBar";
-
 import {
   Box,
   Typography,
@@ -15,45 +14,138 @@ import {
   CardMedia,
   TextField,
   Divider,
-  Chip,
   Accordion,
   AccordionSummary,
   AccordionDetails,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
+// Reusable Car Card Component
+const CarCard = ({ car, onClick }) => (
+  <Card
+    sx={{
+      maxWidth: 345,
+      cursor: "pointer",
+      backgroundColor: "#1a1a1a",
+      border: "2px solid #fff",
+      "&:hover": { boxShadow: "0 0 10px #fff" },
+    }}
+    onClick={onClick}
+  >
+    {car.images?.[0] ? (
+      <CardMedia
+        component="img"
+        height="140"
+        image={`https://utfs.io/f/${car.images[0]}`}
+        alt={`${car.model}`}
+        sx={{ border: "2px solid #000", objectFit: "cover" }}
+      />
+    ) : (
+      <Box
+        sx={{
+          height: 140,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#1a1a1a",
+          border: "2px solid #fff",
+        }}
+      >
+        <Typography variant="body2" color="#bdbdbd">
+          No images attached
+        </Typography>
+      </Box>
+    )}
+    <CardContent>
+      <Typography variant="h6" sx={{ textAlign: "center", color: "#fff" }}>
+        {car.make} {car.model}
+      </Typography>
+      <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
+        Year: {car.year} | Price: ${car.price}
+      </Typography>
+      {car.minBid && (
+        <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
+          Minimum Bid: ${car.minBid}
+        </Typography>
+      )}
+      {car.purchasedPrice && (
+        <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
+          Purchased Price: ${car.purchasedPrice}
+        </Typography>
+      )}
+    </CardContent>
+  </Card>
+);
+
+// Reusable Accordion Component
+const AccordionSection = ({ title, items, loading, onCardClick }) => (
+  <Card sx={{ mb: 3 }}>
+    <CardContent>
+      <Accordion>
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          aria-controls={`${title.toLowerCase()}-content`}
+          id={`${title.toLowerCase()}-header`}
+        >
+          <Typography>
+            <strong>{title}</strong>
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          {loading ? (
+            <Typography>Loading {title.toLowerCase()}...</Typography>
+          ) : items.length === 0 ? (
+            <Typography>
+              You haven't added any {title.toLowerCase()}.
+            </Typography>
+          ) : (
+            <Grid container spacing={3}>
+              {items.map((car) => (
+                <Grid item xs={12} sm={6} md={4} key={car._id}>
+                  <CarCard car={car} onClick={() => onCardClick(car._id)} />
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </AccordionDetails>
+      </Accordion>
+    </CardContent>
+  </Card>
+);
+
 export default function Profile() {
-  const { user, isLoading, error } = useUser();
-  const [isLoadingData, setIsLoadingData] = useState(true);
+  const { user, isLoading } = useUser();
   const router = useRouter();
+  const [isLoadingData, setIsLoadingData] = useState(true);
   const [userInfo, setUserInfo] = useState(null);
-  const [fetchError, setFetchError] = useState(null);
   const [editFields, setEditFields] = useState({
     firstName: "",
     lastName: "",
     generalLocation: "",
     phoneNumber: "",
   });
+  const [carBids, setCarBids] = useState([]);
+  const [myListings, setMyListings] = useState([]);
+  const [myPurchases, setMyPurchases] = useState([]);
 
-  const capitalizeRoles = (roles) =>
-    roles.map((role) => role.charAt(0).toUpperCase() + role.slice(1));
+  const fetchData = async (url, ids) => {
+    if (!ids || ids.length === 0) return [];
+    const data = await Promise.all(
+      ids.map(async (id) => {
+        const response = await fetch(`${url}/${id}`);
+        if (!response.ok) throw new Error(`Failed to fetch data for ID: ${id}`);
+        return response.json();
+      })
+    );
+    return data;
+  };
 
-  // Fetch user data from API
   useEffect(() => {
-    const fetchUserInfo = async () => {
-      if (!user?.sub) return; // Ensure user.sub is available before making the request
-
+    const fetchUserData = async () => {
+      if (!user?.sub) return;
       try {
-        const response = await fetch(`/api/users/${user.sub}`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to fetch user info");
-        }
-
+        const response = await fetch(`/api/users/${user.sub}`);
+        if (!response.ok) throw new Error("Failed to fetch user info");
         const data = await response.json();
         setUserInfo(data);
         setEditFields({
@@ -62,60 +154,25 @@ export default function Profile() {
           generalLocation: data.generalLocation || "",
           phoneNumber: data.phoneNumber || "",
         });
-      } catch (err) {
-        console.error("Error fetching user info:", err.message);
-        setFetchError(err.message); // Store the fetch error
+
+        const [bids, listings, purchases] = await Promise.all([
+          fetchData("/api/cars", data.userBids),
+          fetchData("/api/cars", data.userListings),
+          fetchData("/api/cars", data.userPurchases),
+        ]);
+
+        setCarBids(bids);
+        setMyListings(listings);
+        setMyPurchases(purchases);
+      } catch (error) {
+        console.error(error.message);
       } finally {
         setIsLoadingData(false);
       }
     };
 
-    fetchUserInfo();
-  }, [user?.sub]);
-
-  // Function to add "seller" role to the user
-  const handleBecomeSeller = async () => {
-    if (
-      userInfo.firstName === "" ||
-      userInfo.lastName === "" ||
-      userInfo.generalLocation === "" ||
-      userInfo.phoneNumber.length != 10
-    ) {
-      alert("Complete Profile Information To Become Seller");
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/users/update-roles/${user.sub}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: "seller" }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update user roles");
-      }
-
-      // Fetch the updated user info after saving changes
-      const updatedResponse = await fetch(`/api/users/${user.sub}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (!updatedResponse.ok) {
-        throw new Error("Failed to fetch updated user info");
-      }
-
-      const updatedUserInfo = await updatedResponse.json();
-      setUserInfo(updatedUserInfo);
-
-      alert("Added role successfully!");
-    } catch (err) {
-      console.error("Error updating user roles:", err.message);
-      alert("Failed to update roles. Please try again later.");
-    }
-  };
+    fetchUserData();
+  }, [user]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -123,65 +180,27 @@ export default function Profile() {
   };
 
   const handleSaveChanges = async () => {
-    if (
-      userInfo.firstName === "" ||
-      userInfo.lastName === "" ||
-      userInfo.generalLocation === "" ||
-      userInfo.phoneNumber.length != 10
-    ) {
-      alert("At least one is blank");
-      return;
-    }
-
-    if (
-      editFields.firstName === "" ||
-      editFields.lastName === "" ||
-      editFields.generalLocation === "" ||
-      editFields.phoneNumber === ""
-    ) {
-      alert("Fill in all fields.");
-      return;
-    }
-
-    if (editFields.phoneNumber.length != 10) {
-      alert("Input in a real phone number");
-      return;
-    }
-
     try {
       const response = await fetch(`/api/users/${user.sub}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: editFields.firstName,
-          lastName: editFields.lastName,
-          generalLocation: editFields.generalLocation,
-          phoneNumber: editFields.phoneNumber,
-        }),
+        body: JSON.stringify(editFields),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update user info");
-      }
+      if (!response.ok) throw new Error("Failed to update user info");
 
-      // Fetch the updated user info after saving changes
-      const updatedResponse = await fetch(`/api/users/${user.sub}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
+      const updatedData = await response.json();
 
-      if (!updatedResponse.ok) {
-        throw new Error("Failed to fetch updated user info");
-      }
-
-      const updatedUserInfo = await updatedResponse.json();
-      setUserInfo(updatedUserInfo);
+      // Update userInfo while preserving other properties
+      setUserInfo((prev) => ({
+        ...prev,
+        ...editFields, // Merge updated fields into userInfo
+      }));
 
       alert("Profile updated successfully!");
-    } catch (err) {
-      console.error("Error updating user info:", err.message);
-      alert("Failed to update profile. Please try again later.");
+    } catch (error) {
+      alert("Failed to update profile.");
+      console.error(error.message);
     }
   };
 
@@ -203,15 +222,15 @@ export default function Profile() {
 
   if (!isLoading && !user) {
     router.push("/api/auth/login");
+    return null;
   }
-
-  if (!user) return null;
 
   return (
     <Box sx={{ padding: "2rem", marginTop: "40px" }}>
       <Grid container spacing={4}>
         <NavBar />
         <Grid item xs={12} md={4}>
+          {/* Profile Section */}
           <Card sx={{ textAlign: "center", p: 2, mb: 3 }}>
             <CardMedia
               component="img"
@@ -261,7 +280,7 @@ export default function Profile() {
                   </Button>
                 )}{" "}
               </Box>
-              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+              <Typography variant="body2" sx={{ mt: 1 }}>
                 {userInfo.generalLocation}
               </Typography>
               <Divider sx={{ my: 2 }} />
@@ -281,6 +300,7 @@ export default function Profile() {
             </CardContent>
           </Card>
 
+          {/* Balance Section */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <Typography variant="h5" sx={{ mb: 2 }}>
@@ -293,32 +313,18 @@ export default function Profile() {
             </CardContent>
           </Card>
 
+          {/* Reviews Section */}
           <Card sx={{ mt: 3 }}>
             <CardContent>
               <Typography variant="h5" sx={{ mb: 2 }}>
                 <strong>Reviews</strong>
               </Typography>
               {userInfo.reviews.length === 0 ? (
-                <Typography
-                  variant="subtitle1"
-                  color="textSecondary"
-                  sx={{ mb: 2 }}
-                >
-                  No Reviews Yet
-                </Typography>
+                <Typography>No Reviews Yet</Typography>
               ) : (
                 userInfo.reviews.map((review, index) => (
                   <React.Fragment key={index}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography>{review.message}</Typography>
-                      <Typography
-                        variant="caption"
-                        display="block"
-                        color="textSecondary"
-                      >
-                        - Anonymous
-                      </Typography>
-                    </Box>
+                    <Typography>{review.message}</Typography>
                     {index < userInfo.reviews.length - 1 && (
                       <Divider sx={{ my: 2 }} />
                     )}
@@ -329,6 +335,7 @@ export default function Profile() {
           </Card>
         </Grid>
 
+        {/* Edit Profile and Accordions */}
         <Grid item xs={12} md={8}>
           <Card sx={{ mb: 3 }}>
             <CardContent>
@@ -378,81 +385,25 @@ export default function Profile() {
             </CardContent>
           </Card>
 
-          {/* <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h5" sx={{ mb: 2 }}>
-                <strong>Balance</strong>
-              </Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>
-                Current Balance: ${userInfo.balance}
-              </Typography>
-              <Button variant="contained">Add Funds</Button>
-            </CardContent>
-          </Card> */}
-
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Accordion>
-                <AccordionSummary
-                  expandIcon={<ExpandMoreIcon />}
-                  aria-controls="current-bids-content"
-                  id="current-bids-header"
-                >
-                  <Typography>
-                    <strong>Current Bids</strong>
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  {userInfo.userBids.length === 0 ? (
-                    <Typography>You have't placed any bids.</Typography>
-                  ) : (
-                    userInfo.userBids.map((listingID) => (
-                      <Typography key={listingID}>
-                        <a
-                          href={`/car/${listingID}`}
-                          style={{ textDecoration: "none", color: "blue" }}
-                        >
-                          View Listing {listingID}
-                        </a>
-                      </Typography>
-                    ))
-                  )}
-                </AccordionDetails>
-              </Accordion>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent>
-              <Accordion>
-                <AccordionSummary
-                  expandIcon={<ExpandMoreIcon />}
-                  aria-controls="current-listings-content"
-                  id="current-listings-header"
-                >
-                  <Typography>
-                    <strong>My Listings</strong>
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  {userInfo.userListings.length === 0 ? (
-                    <Typography>You haven't created any listings.</Typography>
-                  ) : (
-                    userInfo.userListings.map((listingID) => (
-                      <Typography key={listingID}>
-                        <a
-                          href={`/car/${listingID}`}
-                          style={{ textDecoration: "none", color: "blue" }}
-                        >
-                          View Listing {listingID}
-                        </a>
-                      </Typography>
-                    ))
-                  )}
-                </AccordionDetails>
-              </Accordion>
-            </CardContent>
-          </Card>
+          {/* Accordion Sections */}
+          <AccordionSection
+            title="My Bids"
+            items={carBids}
+            loading={isLoadingData}
+            onCardClick={(id) => router.push(`/car/${id}`)}
+          />
+          <AccordionSection
+            title="My Listings"
+            items={myListings}
+            loading={isLoadingData}
+            onCardClick={(id) => router.push(`/car/${id}`)}
+          />
+          <AccordionSection
+            title="My Purchases"
+            items={myPurchases}
+            loading={isLoadingData}
+            onCardClick={(id) => router.push(`/car/${id}`)}
+          />
         </Grid>
       </Grid>
     </Box>
