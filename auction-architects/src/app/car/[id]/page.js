@@ -89,6 +89,10 @@ export default function CheckoutPage() {
       return alert(`You are permanetely suspended.`);
     }
 
+    if (userInfo.roles.includes("admin")) {
+      return alert(`Admins can't bid/purchase cars.`);
+    }
+
     const prevBidder = car.bidderId;
     const prevAmount = car.currBid;
 
@@ -146,6 +150,10 @@ export default function CheckoutPage() {
       return alert(
         `You are permanetely suspended. Only admins can unsuspend you.`
       );
+    }
+
+    if (userInfo.roles.includes("admin")) {
+      return alert(`Admins can't bid/purchase cars.`);
     }
 
     const bidDifference = car.price - car.currBid;

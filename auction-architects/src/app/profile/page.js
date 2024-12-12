@@ -183,25 +183,31 @@ export default function Profile() {
       alert("Please enter a valid amount.");
       return;
     }
-  
+
     try {
       const response = await fetch(`/api/users/update-balance/${user.sub}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, amount }),
       });
-  
+
       if (!response.ok) throw new Error("Failed to update balance");
-  
+
       const updatedUser = await response.json();
       setUserInfo((prev) => ({ ...prev, balance: updatedUser.balance }));
-      alert(`Successfully ${action === "deposit" ? "deposited" : "withdrew"} $${amount}`);
+      alert(
+        `Successfully ${
+          action === "deposit" ? "deposited" : "withdrew"
+        } $${amount}`
+      );
       setEditFields((prev) => ({ ...prev, amount: "" }));
     } catch (error) {
-      alert(error.message || "Failed to update balance. Please try again later.");
+      alert(
+        error.message || "Failed to update balance. Please try again later."
+      );
     }
   };
-  
+
   // Function to add "seller" role to the user
   const handleBecomeSeller = async () => {
     if (
@@ -340,17 +346,18 @@ export default function Profile() {
                     <>{capitalizeRoles(userInfo.roles).join(" | ")}</>
                   )}{" "}
                 </Typography>{" "}
-                {!userInfo.roles.includes("seller") && (
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    style={{ marginTop: "10px" }}
-                    onClick={handleBecomeSeller}
-                  >
-                    {" "}
-                    Become a Seller{" "}
-                  </Button>
-                )}{" "}
+                {!userInfo.roles.includes("admin") &&
+                  !userInfo.roles.includes("seller") && (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      style={{ marginTop: "10px" }}
+                      onClick={handleBecomeSeller}
+                    >
+                      {" "}
+                      Become a Seller{" "}
+                    </Button>
+                  )}{" "}
               </Box>
               <Typography variant="body2" sx={{ mt: 1 }}>
                 {userInfo.generalLocation}
@@ -374,42 +381,41 @@ export default function Profile() {
 
           {/* Balance Section */}
           <Card sx={{ mb: 3 }}>
-  <CardContent>
-    <Typography variant="h5" sx={{ mb: 2 }}>
-      <strong>Balance</strong>
-    </Typography>
-    <Typography variant="body1" sx={{ mb: 2 }}>
-      Current Balance: ${userInfo.balance}
-    </Typography>
-    <TextField
-      fullWidth
-      label="Amount"
-      type="number"
-      value={editFields.amount || ""}
-      onChange={(e) =>
-        setEditFields((prev) => ({ ...prev, amount: e.target.value }))
-      }
-      sx={{ mb: 2 }}
-    />
-    <Box sx={{ display: "flex", gap: 2 }}>
-      <Button
-        variant="contained"
-        color="success"
-        onClick={async () => await handleBalanceUpdate("deposit")}
-      >
-        Deposit
-      </Button>
-      <Button
-        variant="contained"
-        color="error"
-        onClick={async () => await handleBalanceUpdate("withdraw")}
-      >
-        Withdraw
-      </Button>
-    </Box>
-  </CardContent>
-</Card>
-
+            <CardContent>
+              <Typography variant="h5" sx={{ mb: 2 }}>
+                <strong>Balance</strong>
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 2 }}>
+                Current Balance: ${userInfo.balance}
+              </Typography>
+              <TextField
+                fullWidth
+                label="Amount"
+                type="number"
+                value={editFields.amount || ""}
+                onChange={(e) =>
+                  setEditFields((prev) => ({ ...prev, amount: e.target.value }))
+                }
+                sx={{ mb: 2 }}
+              />
+              <Box sx={{ display: "flex", gap: 2 }}>
+                <Button
+                  variant="contained"
+                  color="success"
+                  onClick={async () => await handleBalanceUpdate("deposit")}
+                >
+                  Deposit
+                </Button>
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={async () => await handleBalanceUpdate("withdraw")}
+                >
+                  Withdraw
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
 
           {/* Reviews Section */}
           <Card sx={{ mt: 3 }}>
