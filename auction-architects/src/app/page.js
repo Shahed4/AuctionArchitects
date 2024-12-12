@@ -225,7 +225,7 @@ export default function Home() {
                       Year: {car.year} | Price: ${car.price}
                     </Typography>
                     <Typography variant="body2" sx={{ color: "#bdbdbd" }}>
-                      Minimum Bid: ${car.minBid}
+                      Current Bid: ${car.currBid}
                     </Typography>
                   </CardContent>
                 </Card>
