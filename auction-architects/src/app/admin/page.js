@@ -20,52 +20,40 @@ const AdminCard = ({
   subtitle,
   onAction,
   actionLabel,
-  status,
-  isBanned,
   isInactive,
 }) => (
   <Card
     sx={{
-      backgroundColor: isBanned
-        ? "#FFCDD2" // Red for banned users
-        : isInactive
-        ? "#808080" // Gray for inactive listings
-        : status === "Suspended"
-        ? "#FFD700" // Gold for suspended users
-        : "#1a1a1a", // Default for active users
-      color: isBanned || isInactive || status === "Suspended" ? "#000" : "#fff", // Adjust text color for gray, red, or gold backgrounds
+      backgroundColor: isInactive ? "#808080" : "#1a1a1a", // Gray for inactive listings, default for active
+      color: isInactive ? "#000" : "#fff",
       border: "1px solid #fff",
       mb: 2,
     }}
   >
     <CardContent>
       <Typography variant="h6">{title}</Typography>
-      <Typography
-        variant="body2"
-        color={isBanned || isInactive ? "#757575" : "#bdbdbd"}
-        gutterBottom
-      >
+      <Typography variant="body2" color="#bdbdbd" gutterBottom>
         {subtitle}
       </Typography>
       <Typography variant="body2" color={isInactive ? "#B71C1C" : "#616161"}>
         Status: {isInactive ? "Inactive" : "Active"}
       </Typography>
-      {!isBanned && !isInactive && (
-        <Button
-          variant="contained"
-          sx={{
-            backgroundColor:
-              status === "Suspended" ? "#4caf50" : "#d32f2f", // Green for Unsuspend, Red for Suspend
-            color: "#fff",
-          }}
-          onClick={onAction}
-        >
-          {actionLabel}
-        </Button>
-      )}
+      <Button
+        variant="contained"
+        sx={{
+          backgroundColor: isInactive ? "#4caf50" : "#d32f2f", // Green for Reactivate, Red for Deactivate
+          color: "#fff",
+        }}
+        onClick={onAction}
+      >
+        {actionLabel}
+      </Button>
     </CardContent>
   </Card>
 );
+
+
+
 
 
 export default function Admin() {
@@ -118,6 +106,35 @@ export default function Admin() {
 
     fetchData();
   }, []);
+
+  const handleToggleShowListing = async (carId) => {
+    try {
+      const response = await fetch(`/api/cars/${carId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Server Error:", errorData.error);
+        throw new Error(errorData.error || "Failed to toggle showListing");
+      }
+  
+      const { car } = await response.json();
+      setCars((prevCars) =>
+        prevCars.map((prevCar) =>
+          prevCar._id === carId ? car : prevCar
+        )
+      );
+  
+      alert("Listing visibility toggled successfully.");
+    } catch (error) {
+      console.error("Error toggling showListing:", error.message);
+    }
+  };
+  
+ 
+  
   const handleHideListing = async (carId) => {
     try {
       const response = await fetch(`/api/cars/${carId}`, {
@@ -296,15 +313,17 @@ export default function Admin() {
         key={car._id}
         title={`${car.make} ${car.model}`}
         subtitle={`Price: $${car.price} | Year: ${car.year}`}
-        onAction={() => handleRemoveCar(car._id)}
-        actionLabel="Remove Listing"
-        isInactive={car.listingClosed} // Pass inactive status
+        onAction={() => handleToggleShowListing(car._id)}
+        actionLabel={car.showListing ? "Hide Listing" : "Show Listing"}
+        isInactive={!car.showListing} // Treat showListing=false as inactive
       />
     ))
   ) : (
     <Typography>No car listings available.</Typography>
   )}
 </Box>
+
+
 
       </Box>
     </Box>
