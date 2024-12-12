@@ -40,7 +40,6 @@ export async function POST(req) {
     }
 
     const userId = user.sub;
-    console.log("USER ID: ", userId);
 
     // Validate required fields
     const requiredFields = [

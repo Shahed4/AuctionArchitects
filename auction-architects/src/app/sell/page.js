@@ -24,6 +24,7 @@ export default function Sell() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [userInfo, setUserInfo] = useState(null);
   const router = useRouter();
+  const [alertShown, setAlertShown] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1); // Track which step of the form we're on
@@ -105,11 +106,12 @@ export default function Sell() {
   }, [user?.sub]);
 
   useEffect(() => {
-    if (userInfo && !userInfo.roles.includes("seller")) {
+    if (userInfo && !userInfo.roles.includes("seller") && !alertShown) {
       alert("Must be a seller to create a listing.");
+      setAlertShown(true);
       router.push("/profile");
     }
-  }, [userInfo, router]);
+  }, [userInfo, router, alertShown]);
 
   if (isLoading || isLoadingData)
     return (
