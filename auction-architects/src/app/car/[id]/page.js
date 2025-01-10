@@ -804,7 +804,7 @@ export default function CheckoutPage() {
                 mb: 3,
               }}
             >
-              You're the lead bidder!
+              You&apos;re the lead bidder!
             </Typography>
           )}
 
