@@ -113,7 +113,7 @@ export default function UserProfile() {
           backgroundColor: "#000",
         }}
       >
-        <Typography>Page Doesn't Exist. Admins Can't Be Reviewed</Typography>
+        <Typography>Page Doesn&apos;t Exist. Admins Can&apos;t Be Reviewed</Typography>
       </Box>
     );
   }

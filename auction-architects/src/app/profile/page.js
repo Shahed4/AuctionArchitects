@@ -96,7 +96,7 @@ const AccordionSection = ({ title, items, loading, onCardClick }) => (
             <Typography>Loading {title.toLowerCase()}...</Typography>
           ) : items.length === 0 ? (
             <Typography>
-              You haven't added any {title.toLowerCase()}.
+              You haven&apos;t added any {title.toLowerCase()}.
             </Typography>
           ) : (
             <Grid container spacing={3}>
