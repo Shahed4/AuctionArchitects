@@ -3,9 +3,9 @@ import { getSession } from "@auth0/nextjs-auth0";
 import { ObjectId } from "mongodb";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
 export async function POST(req) {
+  // Initialize Stripe client lazily to avoid build-time errors
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
   try {
     const { user, id, amount } = await req.json();
 
