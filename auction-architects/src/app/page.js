@@ -77,9 +77,10 @@ export default function Home() {
   };
 
   return (
-    <Box
-      sx={{ backgroundColor: "#000", minHeight: "100vh", color: "#fff", py: 0 }}
-    >
+    <div suppressHydrationWarning>
+      <Box
+        sx={{ backgroundColor: "#000", minHeight: "100vh", color: "#fff", py: 0 }}
+      >
       <Container maxWidth="lg" sx={{ p: 0 }}>
         <NavBar />
 
@@ -232,5 +233,6 @@ export default function Home() {
         </Box>
       </Container>
     </Box>
+    </div>
   );
 }
