@@ -47,7 +47,7 @@ export default function UserProfile() {
     };
 
     fetchProfileData();
-  }, [userId]);
+  }, [userId, router]);
 
   const handleSubmitReview = async () => {
     if (!reviewMessage || reviewRating === 0) {
