@@ -17,9 +17,30 @@ export default async function handler(req, res) {
       const db = await getDatabase();
       const usersCollection = db.collection("users");
 
-      const user = await usersCollection.findOne({ auth0Id: userId });
+      let user = await usersCollection.findOne({ auth0Id: userId });
+      
+      // If user doesn't exist, create a new user document
       if (!user) {
-        return res.status(404).json({ error: "User not found" });
+        const newUser = {
+          auth0Id: userId,
+          firstName: "",
+          lastName: "",
+          generalLocation: "",
+          phoneNumber: "",
+          balance: 0,
+          roles: ["buyer"],
+          userBids: [],
+          userListings: [],
+          userPurchases: [],
+          reviews: [],
+          isSuspended: false,
+          numSuspensions: 0,
+          createdAt: new Date(),
+        };
+        
+        const result = await usersCollection.insertOne(newUser);
+        user = { ...newUser, _id: result.insertedId };
+        console.log("Created new user:", userId);
       }
 
       return res.status(200).json(user);

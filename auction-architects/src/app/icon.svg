@@ -1,0 +1,19 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with rounded corners -->
+  <rect width="32" height="32" fill="#000" rx="6"/>
+  
+  <!-- Auction gavel (left side) - represents auctions -->
+  <!-- Gavel head -->
+  <rect x="5" y="9" width="8" height="5" fill="#fff" rx="1"/>
+  
+  <!-- Gavel handle -->
+  <rect x="8" y="14" width="2.5" height="9" fill="#fff" rx="1.25"/>
+  
+  <!-- Architectural blueprint square (right side) - represents architects -->
+  <rect x="19" y="11" width="8" height="8" fill="none" stroke="#1976d2" stroke-width="2.5" rx="1.5"/>
+  
+  <!-- Blueprint grid lines -->
+  <line x1="23" y1="11" x2="23" y2="19" stroke="#1976d2" stroke-width="2"/>
+  <line x1="19" y1="15" x2="27" y2="15" stroke="#1976d2" stroke-width="2"/>
+</svg>
+
